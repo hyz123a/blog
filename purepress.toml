@@ -1,0 +1,10 @@
+[site]
+title = "My blog"
+subtitle = "一只腊鸡的技术成长。"
+author = "hyz"
+copyright_year = "2024-2024"
+timezone = "Asia/Beijing"
+language = "zh-Hans"
+
+[config]
+posts_per_index_page = 99999
