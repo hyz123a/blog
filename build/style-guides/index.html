@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+
+<head>
+  
+
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="cleartype" content="on">
+<link rel="alternate" type="application/rss+xml" title="My blog" href="/feed.xml" />
+<link href="/static/theme/style.css" rel="stylesheet">
+
+
+  
+<title>风格指南 - My blog</title>
+<link rel="stylesheet" href="/static/theme/railscasts.min.css">
+<script src="/static/theme/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/medium-zoom@1.0.6/dist/medium-zoom.min.js"></script>
+
+</head>
+
+<body>
+  
+
+  <header class="header">
+    <nav class="nav">
+      <ul>
+        <li><a href="/">首页</a></li>
+<li><a href="/about/">关于</a></li>
+<li><a href="/style-guides/">风格指南</a></li>
+<li><a href="https://github.com/hyz123a/" target="_blank">GitHub</a></li>
+      </ul>
+    </nav>
+  </header>
+  <div class="body">
+    
+<main class="main page">
+  <article class="article">
+    <div class="title">
+      <h1 class="title">风格指南</h1>
+    </div>
+    
+    <div class="content">
+      
+
+      <p>导航：</p>
+<ul>
+<li><a href="/style-guides/chinese.html">中文写作风格指南</a></li>
+<li><a href="/style-guides/markdown.html">Markdown 风格指南</a></li>
+</ul>
+    </div>
+  </article>
+  
+</main>
+
+  </div>
+
+  
+  <footer class="footer" id="footer">
+    <p>&copy; 2024-2024 hyz. All rights reserved.</p>
+<p>Powered by <a href="https://github.com/verilab/purepress">PurePress</a> and <a
+    href="https://github.com/verilab/purepress-theme-minimal">Minimal</a>.</p>
+  </footer>
+
+  
+
+  <script>
+  let elems = document.getElementsByTagName("a");
+  for (let i = 0; i < elems.length; i++) {
+    if (elems[i].href.indexOf(document.domain) < 0) {
+      elems[i].target = "_blank";
+    }
+  }
+</script>
+  
+<script>
+  // enable code syntax highlight
+  hljs.configure({ languages: [] }); // disable language auto detection
+  hljs.initHighlightingOnLoad();
+
+  // enable medium-zoom for all images
+  mediumZoom(document.querySelectorAll('.content img'));
+</script>
+
+</body>
+
+</html>
