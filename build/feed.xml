@@ -1,0 +1,223 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0">
+  <channel>
+    <title>My blog</title>
+    <link>https://hyz123a.github.io/blog/blog/feed.xml</link>
+    <description>一只腊鸡的技术成长。</description>
+    <atom:link href="https://hyz123a.github.io/blog/blog/feed.xml" rel="self"/>
+    <docs>http://www.rssboard.org/rss-specification</docs>
+    <generator>python-feedgen</generator>
+    <lastBuildDate>Sat, 08 Jun 2024 09:44:43 +0000</lastBuildDate>
+    <item>
+      <title>编译一个 AArch64 平台的最小 Linux 内核</title>
+      <link>https://hyz123a.github.io/blog/blog/post/2024/05/28/minimal-linux-with-busybox/</link>
+      <description><![CDATA[<p>总结一下最近折腾的事情，方便以后查阅。</p>
+<blockquote>
+<p>所有内容都假设已经安装了必须的构建工具链，如果没有装，可以在报错的时候再根据提示安装。</p>
+</blockquote>
+<h2>创建 Staging Directory</h2>
+<pre class="highlight"><code class="language-bash">mkdir rootfs</code></pre>
+
+
+<p>接着创建一些空目录：</p>
+<pre class="highlight"><code class="language-bash">mkdir -pv {etc,proc,sys,usr/{bin,sbin}}</code></pre>
+
+
+<h2>编译 BusyBox</h2>
+<p>需要先编译一个 BusyBox 作准备</p>
+<p>在 <a href="https://busybox.net/downloads/">这里</a> 下载适当版本的 BusyBox 源码并解压，然后运行：</p>
+<pre class="highlight"><code class="language-bash">cd busybox-1.32.0
+mkdir build
+
+make ARCH=arm64 defconfig # O=build
+make ARCH=arm64 menuconfig</code></pre>
+
+
+<p>busybox 也使用 Kuild 进行构建，可以开启一个配置菜单。在「Settings」里面修改下面几项配置：</p>
+<pre class="highlight"><code># 减少文件大小
+[*] Don't use /usr
+[*] Build static binary (no shared libs)
+(aarch64-linux-gnu-) Cross compiler prefix
+
+Settings  ---&gt; 
+  (../rootfs) Destination path for 'make install'</code></pre>
+
+
+<p>然后保存并退出。运行：</p>
+<pre class="highlight"><code class="language-bash">make # -j16
+make install
+cd ..</code></pre>
+
+
+<p>这会使用刚刚保存的配置进行编译，然后安装到 <code>rootfs</code> 目录，此时该目录如下：</p>
+<pre class="highlight"><code class="language-bash">$ tree -L 1 .
+.
+├── bin
+├── etc
+├── init
+├── linuxrc -&gt; bin/busybox
+├── proc
+├── sbin
+├── sys
+└── usr
+
+6 directories, 2 files</code></pre>
+
+
+<p>然后在sbin目录下创建一个 <code>init</code> 文件，内容如下：</p>
+<pre class="highlight"><code class="language-bash">#!/bin/sh
+
+# 为了使用 cat /proc/** /sys/**
+mount -t proc none /proc # 这里的none表示这是一个虚拟的文件系统不对应任何块设备文件系统类型
+mount -t sysfs none /sys
+
+echo -e &quot;\nBoot took $(cut -d' ' -f1 /proc/uptime) seconds\n&quot;
+
+exec /bin/sh</code></pre>
+
+
+<p>修改 <code>init</code> 文件为可执行：</p>
+<pre class="highlight"><code class="language-bash">chmod +x init</code></pre>
+
+
+<p>set SUID bit, 可执行文件的 Permission 为 4xxx</p>
+<pre class="highlight"><code class="language-bash">sudo chmod u+s bin linuxrc sbin usr` </code></pre>
+
+
+<p>The <code>chmod u+s</code> command sets the SUID (Set User ID) bit on the specified files. When the SUID bit is set on an executable file, it allows users to execute the file with the permissions of the file owner, rather than with the permissions of the user who is running the file. (from gpt-4o)</p>
+<p>把这些目录和文件打包：</p>
+<pre class="highlight"><code class="language-bash">cd rootfs
+find . | cpio -H newc -ov --owner root:root &gt; ../initramfs.cpio
+cd ..
+gzip initramfs.cpio</code></pre>
+
+
+<p>生成的 gzip 压缩后的 cpio 映像放在了 <code>build/initramfs.cpio.gz</code>，此时 BusyBox <strong>ramdisk(initramfs)</strong> 就做好了，保存备用。</p>
+<h2>编译最小配置的 Linux 内核</h2>
+<p>kernel官方手册也展示了如何使用 <a href="https://docs.kernel.org/6.1/kbuild/llvm.html">llvm</a> 来进行交叉编译内核，这里我选择用clang来编译。(为了方便使用clangd来索引代码)</p>
+<p>在 <a href="https://www.kernel.org/">这里</a> 下载适当版本的内核源码并解压，然后运行：</p>
+<pre class="highlight"><code class="language-bash">cd linux-5.8.8
+make ARCH=arm64 distclean # O=build 清除效果最强
+mkdir build
+make ARCH=arm64 LLVM=1 allnoconfig
+make ARCH=arm64 LLVM=1 menuconfig</code></pre>
+
+
+<p>这会首先初始化一个最小的配置（<code>allnoconfig</code>），然后打开配置菜单。在配置菜单中做以下修改：</p>
+<pre class="highlight"><code>-&gt; General setup
+[*] Initial RAM filesystem and RAM disk (initramfs/initrd) support
+
+-&gt; General setup
+  -&gt; Configure standard kernel features
+[*] Enable support for printk
+
+-&gt; Executable file formats / Emulations
+[*] Kernel support for ELF binaries
+[*] Kernel support for scripts starting with #!
+
+-&gt; Device Drivers
+  -&gt; Generic Driver Options
+[*] Maintain a devtmpfs filesystem to mount at /dev
+[*]   Automount devtmpfs at /dev, after the kernel mounted the rootfs
+
+-&gt; Device Drivers
+  -&gt; Character devices
+[*] Enable TTY
+
+-&gt; Device Drivers
+  -&gt; Character devices
+    -&gt; Serial drivers
+[*] ARM AMBA PL010 serial port support
+[*]   Support for console on AMBA serial port
+[*] ARM AMBA PL011 serial port support
+[*]   Support for console on AMBA serial port
+
+-&gt; File systems
+  -&gt; Pseudo filesystems
+[*] /proc file system support
+[*] sysfs file system support</code></pre>
+
+
+<p>完成后保存并退出，再运行：</p>
+<pre class="highlight"><code class="language-bash">make O=build ARCH=arm64 LLVM=1 # -j16</code></pre>
+
+
+<p>即可编译 Linux 内核，编译出来的两个东西比较有用，一个是 <code>build/vmlinux</code>，另一个是 <code>build/arch/arm64/boot/Image</code>，前者是 ELF 格式的内核，可以用来在 GDB 中加载调试信息，后者是可启动的内核映像文件。</p>
+<h2>编译 qemu-system-aarch64</h2>
+<p>这一步是可选的，直接使用包管理器安装 QEMU 也可以。</p>
+<p>在 <a href="https://download.qemu.org/">这里</a> 下载适当版本的 QEMU 源码并解压，然后运行：</p>
+<pre class="highlight"><code class="language-bash">cd qemu-5.0.0
+
+mkdir build
+cd build
+
+../configure --target-list=aarch64-softmmu
+make # -j8</code></pre>
+
+
+<p>即可编译 AArch64 目标架构的 QEMU。</p>
+<h2>启动 Linux</h2>
+<p>为了清晰起见，回到上面三个源码目录的外层，即当前目录中内容如下：</p>
+<pre class="highlight"><code class="language-bash">$ tree -L 1 .
+.
+├── busybox-1.32.0
+├── linux-5.8.8
+└── qemu-5.0.0
+
+3 directories, 0 files</code></pre>
+
+
+<p>然后使用 QEMU 启动刚刚编译的 Linux：</p>
+<pre class="highlight"><code class="language-bash">#!/bin/bash
+
+qemu-system-aarch64 \
+-machine virt \
+-cpu cortex-a53 \
+-smp 1 \
+-m size=1G \
+-nographic \
+-kernel ./linux-5.15.160/arch/arm64/boot/Image \
+-append &quot;console=ttyAMA0 rdinit=/sbin/init&quot; \
+-initrd initramfs.cpio.gz \
+# -s -S \</code></pre>
+
+
+<p>这里使用了 QEMU 的 <a href="https://www.qemu.org/docs/master/system/arm/virt.html">virt</a> 平台。</p>
+<h2>如何启用 Kernel Module</h2>
+<blockquote>
+<p>因为是构建最小 linux，所以把加载内核模块给关闭了，如要打开，可以在 .config 文件中加上以下内容：</p>
+</blockquote>
+<pre class="highlight"><code> CONFIG_MODULES=y
+ CONFIG_MODULE_FORCE_LOAD=y
+ CONFIG_MODULE_UNLOAD=y
+ CONFIG_MODULE_FORCE_UNLOAD=y</code></pre>
+
+
+<pre class="highlight"><code class="language-bash">make ARCH=arm64 LLVM=1 INSTALL_MOD_PATH=../rootfs/ modules_install 
+# install 模块到 stagding directory</code></pre>
+
+
+<p>在之前的init启动脚本中添加</p>
+<pre class="highlight"><code class="language-bash">mount -t devtmpfs devtmpfs /dev
+echo /sbin/mdev &gt; /proc/sys/kernel/hotplug
+mdev -s</code></pre>
+
+
+<p>来自动管理设备。</p>
+<blockquote>
+<p>Although both mdev and udev create the device nodes themselves, it is easier to just let devtmpfs do the job and use mdev/udev as a layer on top to implement the policy for setting ownership and permissions. The devtmpfs approach is the only maintainable way to generate device nodes prior to user space startup.</p>
+</blockquote>
+<h2>参考资料</h2>
+<ul>
+<li><a href="https://www.amazon.com/Mastering-Embedded-Linux-Programming-potential/dp/1789530385">《Mastering Embedded Linux Programming Third Edition》</a></li>
+<li><a href="https://mgalgs.github.io/2015/05/16/how-to-build-a-custom-linux-kernel-for-qemu-2015-edition.html">How to Build A Custom Linux Kernel For Qemu</a></li>
+<li><a href="https://www.cnblogs.com/lotgu/p/7020418.html">Busybox构建根文件系统和制作Ramdisk</a></li>
+<li><a href="http://wiki.loverpi.com/faq:sbc:libre-aml-s805x-minimal-rootfs">Building a minimal AArch64 root filesystem for network booting</a></li>
+<li><a href="https://gist.github.com/chrisdone/02e165a0004be33734ac2334f215380e">Build and run minimal Linux / Busybox systems in Qemu</a></li>
+<li><a href="https://www.qemu.org/download/#source">Download QEMU</a></li>
+</ul>]]></description>
+      <guid isPermaLink="false">https://hyz123a.github.io/blog/blog/post/2024/05/28/minimal-linux-with-busybox/</guid>
+      <pubDate>Tue, 28 May 2024 14:29:00 +0000</pubDate>
+    </item>
+  </channel>
+</rss>

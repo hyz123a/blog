@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+
+<head>
+  
+
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="cleartype" content="on">
+<link rel="alternate" type="application/rss+xml" title="My blog" href="/blog/feed.xml" />
+<link href="/blog/static/theme/style.css" rel="stylesheet">
+
+
+  
+<title>Markdown 风格指南 - My blog</title>
+<link rel="stylesheet" href="/blog/static/theme/railscasts.min.css">
+<script src="/blog/static/theme/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/medium-zoom@1.0.6/dist/medium-zoom.min.js"></script>
+
+</head>
+
+<body>
+  
+
+  <header class="header">
+    <nav class="nav">
+      <ul>
+        <li><a href="/blog/">首页</a></li>
+<li><a href="/blog/about/">关于</a></li>
+<li><a href="/blog/style-guides/">风格指南</a></li>
+<li><a href="https://github.com/hyz123a/" target="_blank">GitHub</a></li>
+      </ul>
+    </nav>
+  </header>
+  <div class="body">
+    
+<main class="main page">
+  <article class="article">
+    <div class="title">
+      <h1 class="title">Markdown 风格指南</h1>
+    </div>
+    
+    <div class="content">
+      
+      <details open>
+        <summary>目录：</summary>
+        <nav><ul>
+<li><a href="#标题">标题</a><ul>
+<li><a href="#使用-ATX-风格的标题-1-6-个-号">使用 ATX 风格的标题（1～6 个 <code>#</code> 号）</a></li>
+<li><a href="#最后一个-后空一格-标题前后空一行">最后一个 <code>#</code> 后空一格，标题前后空一行</a></li>
+<li><a href="#一篇文章中只应有一个一级标题">一篇文章中只应有一个一级标题</a></li>
+</ul></li>
+<li><a href="#段落">段落</a><ul>
+<li><a href="#段落开头顶格">段落开头顶格</a></li>
+<li><a href="#段落和其它块级元素间空一行">段落和其它块级元素间空一行</a></li>
+</ul></li>
+<li><a href="#强调">强调</a><ul>
+<li><a href="#使用一个-两个和三个-分别表示斜体-粗体和粗斜体">使用一个、两个和三个 <code>*</code> 分别表示斜体、粗体和粗斜体</a></li>
+</ul></li>
+<li><a href="#链接">链接</a><ul>
+<li><a href="#使用有意义的链接文本">使用有意义的链接文本</a></li>
+<li><a href="#使用-lt-gt-快速创建链接">使用 <code>&lt;&gt;</code> 快速创建链接</a></li>
+<li><a href="#链接两边加空格-标点符号除外-个人习惯">链接两边加空格，标点符号除外（个人习惯）</a></li>
+</ul></li>
+<li><a href="#图片">图片</a><ul>
+<li><a href="#不应在文字段落中插入大图">不应在文字段落中插入大图</a></li>
+<li><a href="#可使用-HTML-实现图片居中">可使用 HTML 实现图片居中</a></li>
+</ul></li>
+<li><a href="#行内代码">行内代码</a><ul>
+<li><a href="#行内代码两边加空格-标点符号除外">行内代码两边加空格，标点符号除外</a></li>
+<li><a href="#为文件名-命令-程序代码等应以等宽字体显示的内容使用行内代码样式">为文件名、命令、程序代码等应以等宽字体显示的内容使用行内代码样式</a></li>
+<li><a href="#链接文本中的代码也应使用行内代码样式">链接文本中的代码也应使用行内代码样式</a></li>
+<li><a href="#使用两个-转义-本身">使用两个 <code>`</code> 转义 <code>`</code> 本身</a></li>
+</ul></li>
+<li><a href="#代码块">代码块</a><ul>
+<li><a href="#使用-表示代码块">使用 <code>```</code> 表示代码块</a></li>
+<li><a href="#尽量为代码块标注编程语言">尽量为代码块标注编程语言</a><ul>
+<li><a href="#同一个编程语言的代码块应在全文保持语言名称一致">同一个编程语言的代码块应在全文保持语言名称一致</a></li>
+</ul></li>
+<li><a href="#使用更多-转义多个-本身">使用更多 <code>`</code> 转义多个 <code>`</code> 本身</a></li>
+</ul></li>
+<li><a href="#引用块">引用块</a><ul>
+<li><a href="#引用块中有内容的段落开头-gt-右边应加空格-空行不用">引用块中有内容的段落开头 <code>&gt;</code> 右边应加空格，空行不用</a></li>
+<li><a href="#嵌套引用块应在两层的-gt-间加空格">嵌套引用块应在两层的 <code>&gt;</code> 间加空格</a></li>
+</ul></li>
+<li><a href="#无序列表">无序列表</a><ul>
+<li><a href="#使用-或-表示无序列表-并在全文保持统一">使用 <code>*</code> 或 <code>-</code> 表示无序列表，并在全文保持统一</a></li>
+<li><a href="#多级列表使用四个空格缩进">多级列表使用四个空格缩进</a></li>
+<li><a href="#列表项有多行内容时应缩进到与第一行相同的位置">列表项有多行内容时应缩进到与第一行相同的位置</a></li>
+</ul></li>
+<li><a href="#有序列表">有序列表</a><ul>
+<li><a href="#列表项较多且变更频繁时可全部标为-1-由渲染引擎自动编号">列表项较多且变更频繁时可全部标为 <code>1.</code>，由渲染引擎自动编号</a></li>
+<li><a href="#列表项较少或变更不频繁时应尽量按正确顺序标号">列表项较少或变更不频繁时应尽量按正确顺序标号</a></li>
+</ul></li>
+<li><a href="#表格">表格</a><ul>
+<li><a href="#行的两侧不加-标题行下面只使用三个">行的两侧不加 <code>|</code>，标题行下面只使用三个 <code>-</code></a></li>
+<li><a href="#表格内容两侧加空格">表格内容两侧加空格</a></li>
+</ul></li>
+<li><a href="#删除线">删除线</a><ul>
+<li><a href="#使用-lt-del-gt-或-如果渲染引擎支持-表示删除线样式">使用 <code>&lt;del&gt;</code> 或 <code>~~</code>（如果渲染引擎支持）表示删除线样式</a></li>
+</ul></li>
+<li><a href="#其它">其它</a><ul>
+<li><a href="#称之为-Markdown-或-markdown-而不是-MarkDown">称之为“Markdown”或“markdown”，而不是“MarkDown”</a></li>
+<li><a href="#使用-md-作为文件扩展名-而不是-markdown-或-mdown">使用 <code>.md</code> 作为文件扩展名，而不是 <code>.markdown</code> 或 <code>.mdown</code></a></li>
+<li><a href="#编写内容时遵循-中文写作风格指南">编写内容时遵循 <a href="chinese.html">中文写作风格指南</a></a></li>
+</ul></li>
+<li><a href="#参考资料">参考资料</a></li>
+</ul></nav>
+      </details>
+      <hr>
+      
+
+      <h2><a id="标题" href="#标题" class="anchor"></a>标题</h2>
+<h3><a id="使用-ATX-风格的标题-1-6-个-号" href="#使用-ATX-风格的标题-1-6-个-号" class="anchor"></a>使用 ATX 风格的标题（1～6 个 <code>#</code> 号）</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md"># 一级标题
+## 二级标题
+### 三级标题
+#### 四级标题</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">一级标题
+=======</code></pre>
+
+
+<h3><a id="最后一个-后空一格-标题前后空一行" href="#最后一个-后空一格-标题前后空一行" class="anchor"></a>最后一个 <code>#</code> 后空一格，标题前后空一行</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">前一个段落的内容……
+
+## 一个标题
+
+下一个段落……</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">##一个标题
+段落内容……</code></pre>
+
+
+<h3><a id="一篇文章中只应有一个一级标题" href="#一篇文章中只应有一个一级标题" class="anchor"></a>一篇文章中只应有一个一级标题</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md"># 一个一级标题
+
+## 第一个二级标题
+
+Blahblah……
+
+## 第二个二级标题
+
+Blahblah……</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md"># 一个一级标题
+
+## 第一个二级标题
+
+Blahblah……
+
+# 又一个一级标题
+
+Blahblah……</code></pre>
+
+
+<h2><a id="段落" href="#段落" class="anchor"></a>段落</h2>
+<h3><a id="段落开头顶格" href="#段落开头顶格" class="anchor"></a>段落开头顶格</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">这是一个段落。这是一个段落。这是一个段落。这是一个段落。这是一个段落。这是一个段落。这是一个段落。这是一个段落。这是一个段落。
+
+这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。
+
+This is the third paragraph. This is the third paragraph. This is the third paragraph. This is the third paragraph.</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">  这是一个段落。这是一个段落。这是一个段落。这是一个段落。这是一个段落。这是一个段落。这是一个段落。这是一个段落。这是一个段落。
+
+  这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。
+
+  This is the third paragraph. This is the third paragraph. This is the third paragraph. This is the third paragraph.</code></pre>
+
+
+<h3><a id="段落和其它块级元素间空一行" href="#段落和其它块级元素间空一行" class="anchor"></a>段落和其它块级元素间空一行</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">## 一个标题
+
+这是一个段落。这是一个段落。这是一个段落。这是一个段落。
+
+- foo
+- bar
+
+这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。
+
+&gt; 一块引用内容</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">## 一个标题
+这是一个段落。这是一个段落。这是一个段落。这是一个段落。
+- foo
+- bar
+这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。
+&gt; 一块引用内容</code></pre>
+
+
+<h2><a id="强调" href="#强调" class="anchor"></a>强调</h2>
+<h3><a id="使用一个-两个和三个-分别表示斜体-粗体和粗斜体" href="#使用一个-两个和三个-分别表示斜体-粗体和粗斜体" class="anchor"></a>使用一个、两个和三个 <code>*</code> 分别表示斜体、粗体和粗斜体</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">这是一个*斜体*；这是一个**粗体**；这是一个***粗斜体***。</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">这是一个_斜体_；这是一个__粗体__；这是一个___粗斜体___；这是一个**混用**。</code></pre>
+
+
+<h2><a id="链接" href="#链接" class="anchor"></a>链接</h2>
+<h3><a id="使用有意义的链接文本" href="#使用有意义的链接文本" class="anchor"></a>使用有意义的链接文本</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">我的博客是 [Project RC](https://stdrc.cc)。</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">我的博客是 Project RC，点击 [这里](https://stdrc.cc) 查看。</code></pre>
+
+
+<h3><a id="使用-lt-gt-快速创建链接" href="#使用-lt-gt-快速创建链接" class="anchor"></a>使用 <code>&lt;&gt;</code> 快速创建链接</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">## 参考资料
+
+- &lt;https://google.github.io/styleguide/docguide/style.html&gt;</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">## 参考资料
+
+- [https://google.github.io/styleguide/docguide/style.html](https://google.github.io/styleguide/docguide/style.html)</code></pre>
+
+
+<h3><a id="链接两边加空格-标点符号除外-个人习惯" href="#链接两边加空格-标点符号除外-个人习惯" class="anchor"></a>链接两边加空格，标点符号除外（个人习惯）</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">## 标题里的 [某某链接](https://stdrc.cc)
+
+这是一个段落。这是一个段落。中间有个 [某某链接](https://stdrc.cc)。这是一个段落。这是一个段落。</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">## 标题里的[某某链接](https://stdrc.cc)
+
+这是一个段落。这是一个段落。中间有个[某某链接](https://stdrc.cc)。这是一个段落。这是一个段落。</code></pre>
+
+
+<h2><a id="图片" href="#图片" class="anchor"></a>图片</h2>
+<h3><a id="不应在文字段落中插入大图" href="#不应在文字段落中插入大图" class="anchor"></a>不应在文字段落中插入大图</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">这是一个段落。这是一个段落。一个超大的图片如下：
+
+![超大的图片](http://example.com/abc.jpg)
+
+这是另一个段落。这是另一个段落。</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">这是一个段落。这是一个段落。中间有个 ![超大的图片](http://example.com/abc.jpg)。这是一个段落。这是一个段落。</code></pre>
+
+
+<h3><a id="可使用-HTML-实现图片居中" href="#可使用-HTML-实现图片居中" class="anchor"></a>可使用 HTML 实现图片居中</h3>
+<pre class="highlight"><code class="language-md">&lt;p align=&quot;center&quot;&gt;
+  &lt;img width=&quot;600&quot; height=&quot;200&quot; src=&quot;http://example.com/abc.jpg&quot;&gt;
+&lt;/p&gt;</code></pre>
+
+
+<h2><a id="行内代码" href="#行内代码" class="anchor"></a>行内代码</h2>
+<h3><a id="行内代码两边加空格-标点符号除外" href="#行内代码两边加空格-标点符号除外" class="anchor"></a>行内代码两边加空格，标点符号除外</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">## 标题里的 `inline` 代码
+
+这是一个段落。这是一个段落。中间有个 `inline code`。这是一个段落。这是一个段落。</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">## 标题里的`inline`代码
+
+这是一个段落。这是一个段落。中间有个`inline code`。这是一个段落。这是一个段落。</code></pre>
+
+
+<h3><a id="为文件名-命令-程序代码等应以等宽字体显示的内容使用行内代码样式" href="#为文件名-命令-程序代码等应以等宽字体显示的内容使用行内代码样式" class="anchor"></a>为文件名、命令、程序代码等应以等宽字体显示的内容使用行内代码样式</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">编辑文件 `main.c`，然后运行命令 `gcc main.c`。</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">编辑文件 main.c，然后运行命令 gcc main.c。</code></pre>
+
+
+<h3><a id="链接文本中的代码也应使用行内代码样式" href="#链接文本中的代码也应使用行内代码样式" class="anchor"></a>链接文本中的代码也应使用行内代码样式</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">更多文档请参考 [`mmap`](https://man7.org/linux/man-pages/man2/mmap.2.html)。</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">更多文档请参考 [mmap](https://man7.org/linux/man-pages/man2/mmap.2.html)。</code></pre>
+
+
+<h3><a id="使用两个-转义-本身" href="#使用两个-转义-本身" class="anchor"></a>使用两个 <code>`</code> 转义 <code>`</code> 本身</h3>
+<pre class="highlight"><code class="language-md">使用两个 `` ` `` 转义 `` ` `` 本身，例如 ``Foo`Bar``。如果代码中只有 `` ` `` 这一个字符，需在两侧加空格。</code></pre>
+
+
+<h2><a id="代码块" href="#代码块" class="anchor"></a>代码块</h2>
+<h3><a id="使用-表示代码块" href="#使用-表示代码块" class="anchor"></a>使用 <code>```</code> 表示代码块</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">下面是一个代码块：
+
+```python
+def foo():
+    pass
+```
+
+这是另一个段落。</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">下面是一个代码块：
+
+    def foo():
+        pass
+
+这是另一个段落。</code></pre>
+
+
+<h3><a id="尽量为代码块标注编程语言" href="#尽量为代码块标注编程语言" class="anchor"></a>尽量为代码块标注编程语言</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">```python
+def foo():
+    pass
+```</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">```
+def foo():
+    pass
+```</code></pre>
+
+
+<h4><a id="同一个编程语言的代码块应在全文保持语言名称一致" href="#同一个编程语言的代码块应在全文保持语言名称一致" class="anchor"></a>同一个编程语言的代码块应在全文保持语言名称一致</h4>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">第一段代码：
+
+```python
+def foo():
+    pass
+```
+
+第二段代码：
+
+```python
+def foo():
+    pass
+```</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">第一段代码：
+
+```python
+def foo():
+    pass
+```
+
+第二段代码：
+
+```py
+def foo():
+    pass
+```</code></pre>
+
+
+<h3><a id="使用更多-转义多个-本身" href="#使用更多-转义多个-本身" class="anchor"></a>使用更多 <code>`</code> 转义多个 <code>`</code> 本身</h3>
+<pre class="highlight"><code class="language-md">````md
+下面是一个代码块：
+
+```python
+def foo():
+    pass
+```
+
+这是另一个段落。
+````</code></pre>
+
+
+<h2><a id="引用块" href="#引用块" class="anchor"></a>引用块</h2>
+<h3><a id="引用块中有内容的段落开头-gt-右边应加空格-空行不用" href="#引用块中有内容的段落开头-gt-右边应加空格-空行不用" class="anchor"></a>引用块中有内容的段落开头 <code>&gt;</code> 右边应加空格，空行不用</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">&gt; 第一个段落。第一个段落。第一个段落。第一个段落。
+&gt;
+&gt; 第二个段落。第二个段落。第二个段落。第二个段落。</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">&gt;第一个段落。第一个段落。第一个段落。第一个段落。
+&gt;
+&gt;第二个段落。第二个段落。第二个段落。第二个段落。</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">&gt; 第一个段落。第一个段落。第一个段落。第一个段落。
+&gt; &lt;- 这里有个空格
+&gt; 第二个段落。第二个段落。第二个段落。第二个段落。</code></pre>
+
+
+<h3><a id="嵌套引用块应在两层的-gt-间加空格" href="#嵌套引用块应在两层的-gt-间加空格" class="anchor"></a>嵌套引用块应在两层的 <code>&gt;</code> 间加空格</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">&gt; 第一个段落。第一个段落。第一个段落。下面是个嵌套引用：
+&gt;
+&gt; &gt; 嵌套引用段落。嵌套引用段落。嵌套引用段落。嵌套引用段落。
+&gt; &gt;
+&gt; &gt; 嵌套引用第二个段落。嵌套引用第二个段落。嵌套引用第二个段落。嵌套引用第二个段落。</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">&gt; 第一个段落。第一个段落。第一个段落。下面是个嵌套引用：
+&gt;
+&gt;&gt; 嵌套引用段落。嵌套引用段落。嵌套引用段落。嵌套引用段落。
+&gt;&gt;
+&gt;&gt; 嵌套引用第二个段落。嵌套引用第二个段落。嵌套引用第二个段落。嵌套引用第二个段落。</code></pre>
+
+
+<h2><a id="无序列表" href="#无序列表" class="anchor"></a>无序列表</h2>
+<h3><a id="使用-或-表示无序列表-并在全文保持统一" href="#使用-或-表示无序列表-并在全文保持统一" class="anchor"></a>使用 <code>*</code> 或 <code>-</code> 表示无序列表，并在全文保持统一</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">- foo
+- bar
+    - bar1
+    - bar2
+- baz</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">- foo
+- bar
+    * bar1
+    * bar2
+- baz
+
+另一个列表：
+
+* aaa
+* bbb</code></pre>
+
+
+<h3><a id="多级列表使用四个空格缩进" href="#多级列表使用四个空格缩进" class="anchor"></a>多级列表使用四个空格缩进</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">- foo
+- bar
+    - bar1
+    - bar2
+- baz</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">- foo
+- bar
+  - bar1
+  - bar2
+- baz</code></pre>
+
+
+<h3><a id="列表项有多行内容时应缩进到与第一行相同的位置" href="#列表项有多行内容时应缩进到与第一行相同的位置" class="anchor"></a>列表项有多行内容时应缩进到与第一行相同的位置</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">- foo
+- 这是一个较复杂的列表项，有代码：
+
+  ```python
+  def foo():
+      pass
+  ```
+
+  和另一段内容。
+- baz</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">- foo
+- 这是一个较复杂的列表项，有代码：
+
+```python
+def foo():
+    pass
+```
+
+和另一段内容。
+- baz</code></pre>
+
+
+<h2><a id="有序列表" href="#有序列表" class="anchor"></a>有序列表</h2>
+<h3><a id="列表项较多且变更频繁时可全部标为-1-由渲染引擎自动编号" href="#列表项较多且变更频繁时可全部标为-1-由渲染引擎自动编号" class="anchor"></a>列表项较多且变更频繁时可全部标为 <code>1.</code>，由渲染引擎自动编号</h3>
+<pre class="highlight"><code class="language-md">1. foo
+1. bar
+    1. bar1
+    1. bar2
+1. baz</code></pre>
+
+
+<h3><a id="列表项较少或变更不频繁时应尽量按正确顺序标号" href="#列表项较少或变更不频繁时应尽量按正确顺序标号" class="anchor"></a>列表项较少或变更不频繁时应尽量按正确顺序标号</h3>
+<pre class="highlight"><code class="language-md">1. foo
+2. bar
+3. baz</code></pre>
+
+
+<h2><a id="表格" href="#表格" class="anchor"></a>表格</h2>
+<blockquote>
+<p>只针对 GitHub Flavored Markdown（GFM）。</p>
+</blockquote>
+<h3><a id="行的两侧不加-标题行下面只使用三个" href="#行的两侧不加-标题行下面只使用三个" class="anchor"></a>行的两侧不加 <code>|</code>，标题行下面只使用三个 <code>-</code></h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">姓名 | 学号 | 兴趣爱好
+--- | --- | ---
+张三 | 101 | 打篮球
+李四 | 102 | 唱歌</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">| 姓名 | 学号 | 兴趣爱好 |
+| --- | --- | ------- |
+| 张三 | 101 | 打篮球 |
+| 李四 | 102 | 唱歌 |</code></pre>
+
+
+<h3><a id="表格内容两侧加空格" href="#表格内容两侧加空格" class="anchor"></a>表格内容两侧加空格</h3>
+<p>👍：</p>
+<pre class="highlight"><code class="language-md">姓名 | 学号 | 兴趣爱好
+--- | --- | ---
+张三 | 101 | 打篮球
+李四 | 102 | 唱歌</code></pre>
+
+
+<p>👎：</p>
+<pre class="highlight"><code class="language-md">姓名|学号|兴趣爱好
+---|---|---
+张三|101|打篮球
+李四|102|唱歌</code></pre>
+
+
+<h2><a id="删除线" href="#删除线" class="anchor"></a>删除线</h2>
+<h3><a id="使用-lt-del-gt-或-如果渲染引擎支持-表示删除线样式" href="#使用-lt-del-gt-或-如果渲染引擎支持-表示删除线样式" class="anchor"></a>使用 <code>&lt;del&gt;</code> 或 <code>~~</code>（如果渲染引擎支持）表示删除线样式</h3>
+<pre class="highlight"><code class="language-md">&lt;del&gt;哈哈哈哈！&lt;/del&gt;被删除了！</code></pre>
+
+
+<h2><a id="其它" href="#其它" class="anchor"></a>其它</h2>
+<h3><a id="称之为-Markdown-或-markdown-而不是-MarkDown" href="#称之为-Markdown-或-markdown-而不是-MarkDown" class="anchor"></a>称之为“Markdown”或“markdown”，而不是“MarkDown”</h3>
+<h3><a id="使用-md-作为文件扩展名-而不是-markdown-或-mdown" href="#使用-md-作为文件扩展名-而不是-markdown-或-mdown" class="anchor"></a>使用 <code>.md</code> 作为文件扩展名，而不是 <code>.markdown</code> 或 <code>.mdown</code></h3>
+<h3><a id="编写内容时遵循-中文写作风格指南" href="#编写内容时遵循-中文写作风格指南" class="anchor"></a>编写内容时遵循 <a href="chinese.html">中文写作风格指南</a></h3>
+<h2><a id="参考资料" href="#参考资料" class="anchor"></a>参考资料</h2>
+<ul>
+<li><a href="https://google.github.io/styleguide/docguide/style.html">https://google.github.io/styleguide/docguide/style.html</a></li>
+<li><a href="https://www.markdownguide.org/basic-syntax/">https://www.markdownguide.org/basic-syntax/</a></li>
+<li><a href="https://guides.github.com/features/mastering-markdown/">https://guides.github.com/features/mastering-markdown/</a></li>
+</ul>
+    </div>
+  </article>
+  
+</main>
+
+  </div>
+
+  
+  <footer class="footer" id="footer">
+    <p>&copy; 2024-2024 hyz. All rights reserved.</p>
+<p>Powered by <a href="https://github.com/verilab/purepress">PurePress</a> and <a
+    href="https://github.com/verilab/purepress-theme-minimal">Minimal</a>.</p>
+  </footer>
+
+  
+
+  <script>
+  let elems = document.getElementsByTagName("a");
+  for (let i = 0; i < elems.length; i++) {
+    if (elems[i].href.indexOf(document.domain) < 0) {
+      elems[i].target = "_blank";
+    }
+  }
+</script>
+  
+<script>
+  // enable code syntax highlight
+  hljs.configure({ languages: [] }); // disable language auto detection
+  hljs.initHighlightingOnLoad();
+
+  // enable medium-zoom for all images
+  mediumZoom(document.querySelectorAll('.content img'));
+</script>
+
+</body>
+
+</html>
