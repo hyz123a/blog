@@ -1,8 +1,4 @@
-/.vscode
-/.idea
-/__pycache__
-/venv
-/.venv
+/build
 /private
 
 TODO.md

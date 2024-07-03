@@ -166,7 +166,7 @@ make ARCH=arm64 LLVM=1 menuconfig
 完成后保存并退出，再运行：
 
 ```bash
-make O=build ARCH=arm64 LLVM=1 # -j16
+make ARCH=arm64 LLVM=1 # O=build -j16
 ```
 
 即可编译 Linux 内核，编译出来的两个东西比较有用，一个是 `build/vmlinux`，另一个是 `build/arch/arm64/boot/Image`，前者是 ELF 格式的内核，可以用来在 GDB 中加载调试信息，后者是可启动的内核映像文件。
