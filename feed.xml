@@ -1,0 +1,574 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0">
+  <channel>
+    <title>Hyz blog</title>
+    <link>https://hyz123a.github.io/blog/blog/feed.xml</link>
+    <description>一只腊鸡的技术成长。</description>
+    <atom:link href="https://hyz123a.github.io/blog/blog/feed.xml" rel="self"/>
+    <docs>http://www.rssboard.org/rss-specification</docs>
+    <generator>python-feedgen</generator>
+    <lastBuildDate>Wed, 03 Jul 2024 16:28:04 +0000</lastBuildDate>
+    <item>
+      <title>编译一个 AArch64 平台的最小 Linux 内核</title>
+      <link>https://hyz123a.github.io/blog/blog/post/2024/05/28/minimal-linux-with-busybox/</link>
+      <description><![CDATA[<p>总结一下最近折腾的事情，方便以后查阅。</p>
+<blockquote>
+<p>所有内容都假设已经安装了必须的构建工具链，如果没有装，可以在报错的时候再根据提示安装。</p>
+</blockquote>
+<h2>创建 Staging Directory</h2>
+<pre class="highlight"><code class="language-bash">mkdir rootfs</code></pre>
+
+
+<p>接着创建一些空目录：</p>
+<pre class="highlight"><code class="language-bash">mkdir -pv {etc,proc,sys,usr/{bin,sbin}}</code></pre>
+
+
+<h2>编译 BusyBox</h2>
+<p>需要先编译一个 BusyBox 作准备</p>
+<p>在 <a href="https://busybox.net/downloads/">这里</a> 下载适当版本的 BusyBox 源码并解压，然后运行：</p>
+<pre class="highlight"><code class="language-bash">cd busybox-1.32.0
+mkdir build
+
+make ARCH=arm64 defconfig # O=build
+make ARCH=arm64 menuconfig</code></pre>
+
+
+<p>busybox 也使用 Kuild 进行构建，可以开启一个配置菜单。在「Settings」里面修改下面几项配置：</p>
+<pre class="highlight"><code># 减少文件大小
+[*] Don't use /usr
+[*] Build static binary (no shared libs)
+(aarch64-linux-gnu-) Cross compiler prefix
+
+Settings  ---&gt; 
+  (../rootfs) Destination path for 'make install'</code></pre>
+
+
+<p>然后保存并退出。运行：</p>
+<pre class="highlight"><code class="language-bash">make # -j16
+make install
+cd ..</code></pre>
+
+
+<p>这会使用刚刚保存的配置进行编译，然后安装到 <code>rootfs</code> 目录，此时该目录如下：</p>
+<pre class="highlight"><code class="language-bash">$ tree -L 1 .
+.
+├── bin
+├── etc
+├── init
+├── linuxrc -&gt; bin/busybox
+├── proc
+├── sbin
+├── sys
+└── usr
+
+6 directories, 2 files</code></pre>
+
+
+<p>然后在sbin目录下创建一个 <code>init</code> 文件，内容如下：</p>
+<pre class="highlight"><code class="language-bash">#!/bin/sh
+
+# 为了使用 cat /proc/** /sys/**
+mount -t proc none /proc # 这里的none表示这是一个虚拟的文件系统不对应任何块设备文件系统类型
+mount -t sysfs none /sys
+
+echo -e &quot;\nBoot took $(cut -d' ' -f1 /proc/uptime) seconds\n&quot;
+
+exec /bin/sh</code></pre>
+
+
+<p>修改 <code>init</code> 文件为可执行：</p>
+<pre class="highlight"><code class="language-bash">chmod +x init</code></pre>
+
+
+<p>set SUID bit, 可执行文件的 Permission 为 4xxx</p>
+<pre class="highlight"><code class="language-bash">sudo chmod u+s bin linuxrc sbin usr` </code></pre>
+
+
+<p>The <code>chmod u+s</code> command sets the SUID (Set User ID) bit on the specified files. When the SUID bit is set on an executable file, it allows users to execute the file with the permissions of the file owner, rather than with the permissions of the user who is running the file. (from gpt-4o)</p>
+<p>把这些目录和文件打包：</p>
+<pre class="highlight"><code class="language-bash">cd rootfs
+find . | cpio -H newc -ov --owner root:root &gt; ../initramfs.cpio
+cd ..
+gzip initramfs.cpio</code></pre>
+
+
+<p>生成的 gzip 压缩后的 cpio 映像放在了 <code>build/initramfs.cpio.gz</code>，此时 BusyBox <strong>ramdisk(initramfs)</strong> 就做好了，保存备用。</p>
+<h2>编译最小配置的 Linux 内核</h2>
+<p>kernel官方手册也展示了如何使用 <a href="https://docs.kernel.org/6.1/kbuild/llvm.html">llvm</a> 来进行交叉编译内核，这里我选择用clang来编译。(为了方便使用clangd来索引代码)</p>
+<p>在 <a href="https://www.kernel.org/">这里</a> 下载适当版本的内核源码并解压，然后运行：</p>
+<pre class="highlight"><code class="language-bash">cd linux-5.8.8
+make ARCH=arm64 distclean # O=build 清除效果最强
+mkdir build
+make ARCH=arm64 LLVM=1 allnoconfig
+make ARCH=arm64 LLVM=1 menuconfig</code></pre>
+
+
+<p>这会首先初始化一个最小的配置（<code>allnoconfig</code>），然后打开配置菜单。在配置菜单中做以下修改：</p>
+<pre class="highlight"><code>-&gt; General setup
+[*] Initial RAM filesystem and RAM disk (initramfs/initrd) support
+
+-&gt; General setup
+  -&gt; Configure standard kernel features
+[*] Enable support for printk
+
+-&gt; Executable file formats / Emulations
+[*] Kernel support for ELF binaries
+[*] Kernel support for scripts starting with #!
+
+-&gt; Device Drivers
+  -&gt; Generic Driver Options
+[*] Maintain a devtmpfs filesystem to mount at /dev
+[*]   Automount devtmpfs at /dev, after the kernel mounted the rootfs
+
+-&gt; Device Drivers
+  -&gt; Character devices
+[*] Enable TTY
+
+-&gt; Device Drivers
+  -&gt; Character devices
+    -&gt; Serial drivers
+[*] ARM AMBA PL010 serial port support
+[*]   Support for console on AMBA serial port
+[*] ARM AMBA PL011 serial port support
+[*]   Support for console on AMBA serial port
+
+-&gt; File systems
+  -&gt; Pseudo filesystems
+[*] /proc file system support
+[*] sysfs file system support</code></pre>
+
+
+<p>完成后保存并退出，再运行：</p>
+<pre class="highlight"><code class="language-bash">make ARCH=arm64 LLVM=1 # O=build -j16</code></pre>
+
+
+<p>即可编译 Linux 内核，编译出来的两个东西比较有用，一个是 <code>build/vmlinux</code>，另一个是 <code>build/arch/arm64/boot/Image</code>，前者是 ELF 格式的内核，可以用来在 GDB 中加载调试信息，后者是可启动的内核映像文件。</p>
+<h2>编译 qemu-system-aarch64</h2>
+<p>这一步是可选的，直接使用包管理器安装 QEMU 也可以。</p>
+<p>在 <a href="https://download.qemu.org/">这里</a> 下载适当版本的 QEMU 源码并解压，然后运行：</p>
+<pre class="highlight"><code class="language-bash">cd qemu-5.0.0
+
+mkdir build
+cd build
+
+../configure --target-list=aarch64-softmmu
+make # -j8</code></pre>
+
+
+<p>即可编译 AArch64 目标架构的 QEMU。</p>
+<h2>启动 Linux</h2>
+<p>为了清晰起见，回到上面三个源码目录的外层，即当前目录中内容如下：</p>
+<pre class="highlight"><code class="language-bash">$ tree -L 1 .
+.
+├── busybox-1.32.0
+├── linux-5.8.8
+└── qemu-5.0.0
+
+3 directories, 0 files</code></pre>
+
+
+<p>然后使用 QEMU 启动刚刚编译的 Linux：</p>
+<pre class="highlight"><code class="language-bash">#!/bin/bash
+
+qemu-system-aarch64 \
+-machine virt \
+-cpu cortex-a53 \
+-smp 1 \
+-m size=1G \
+-nographic \
+-kernel ./linux-5.15.160/arch/arm64/boot/Image \
+-append &quot;console=ttyAMA0 rdinit=/sbin/init&quot; \
+-initrd initramfs.cpio.gz \
+# -s -S \</code></pre>
+
+
+<p>这里使用了 QEMU 的 <a href="https://www.qemu.org/docs/master/system/arm/virt.html">virt</a> 平台。</p>
+<h2>如何启用 Kernel Module</h2>
+<blockquote>
+<p>因为是构建最小 linux，所以把加载内核模块给关闭了，如要打开，可以在 .config 文件中加上以下内容：</p>
+</blockquote>
+<pre class="highlight"><code> CONFIG_MODULES=y
+ CONFIG_MODULE_FORCE_LOAD=y
+ CONFIG_MODULE_UNLOAD=y
+ CONFIG_MODULE_FORCE_UNLOAD=y</code></pre>
+
+
+<pre class="highlight"><code class="language-bash">make ARCH=arm64 LLVM=1 INSTALL_MOD_PATH=../rootfs/ modules_install 
+# install 模块到 stagding directory</code></pre>
+
+
+<p>在之前的init启动脚本中添加</p>
+<pre class="highlight"><code class="language-bash">mount -t devtmpfs devtmpfs /dev
+echo /sbin/mdev &gt; /proc/sys/kernel/hotplug
+mdev -s</code></pre>
+
+
+<p>来自动管理设备。</p>
+<blockquote>
+<p>Although both mdev and udev create the device nodes themselves, it is easier to just let devtmpfs do the job and use mdev/udev as a layer on top to implement the policy for setting ownership and permissions. The devtmpfs approach is the only maintainable way to generate device nodes prior to user space startup.</p>
+</blockquote>
+<h2>参考资料</h2>
+<ul>
+<li><a href="https://www.amazon.com/Mastering-Embedded-Linux-Programming-potential/dp/1789530385">《Mastering Embedded Linux Programming Third Edition》</a></li>
+<li><a href="https://mgalgs.github.io/2015/05/16/how-to-build-a-custom-linux-kernel-for-qemu-2015-edition.html">How to Build A Custom Linux Kernel For Qemu</a></li>
+<li><a href="https://www.cnblogs.com/lotgu/p/7020418.html">Busybox构建根文件系统和制作Ramdisk</a></li>
+<li><a href="http://wiki.loverpi.com/faq:sbc:libre-aml-s805x-minimal-rootfs">Building a minimal AArch64 root filesystem for network booting</a></li>
+<li><a href="https://gist.github.com/chrisdone/02e165a0004be33734ac2334f215380e">Build and run minimal Linux / Busybox systems in Qemu</a></li>
+<li><a href="https://www.qemu.org/download/#source">Download QEMU</a></li>
+</ul>]]></description>
+      <guid isPermaLink="false">https://hyz123a.github.io/blog/blog/post/2024/05/28/minimal-linux-with-busybox/</guid>
+      <pubDate>Tue, 28 May 2024 14:29:00 +0000</pubDate>
+    </item>
+    <item>
+      <title>C++ 的类</title>
+      <link>https://hyz123a.github.io/blog/blog/post/2024/05/29/class-in-cpp/</link>
+      <description><![CDATA[<p>最近经常能够看到 C++ 面经中出现 C++ 类的内存布局及初始化一个派生类时基类，派生类的构造顺序等这样的问题。同时自己也在这方面存在疑惑，所以就专门去学习了相关的知识，并在查找资历的过程中记录一下。</p>
+<h2>C++ 类内存布局</h2>
+<p>在开始之前先看一下 clang 的两个命令：</p>
+<pre class="highlight"><code class="language-bash">clang++ -Xclang -fdump-record-layouts xxx.cpp
+clang++ -Xclang -fdump-vtable-layouts xxx.cpp</code></pre>
+
+
+<p>对于代码</p>
+<pre class="highlight"><code class="language-C++">#include &lt;iostream&gt;
+
+class A {
+public:
+  A(int x) {
+    std::cout &lt;&lt; &quot;A's constructor with value: &quot; &lt;&lt; x &lt;&lt; std::endl;
+  }
+  ~A() {
+    std::cout &lt;&lt; &quot;A's deconstructor&quot; &lt;&lt; std::endl;
+  }
+  virtual void foo() {
+      std::cout &lt;&lt; &quot;A::foo&quot; &lt;&lt; std::endl;
+  }
+private:
+  int a;
+};
+
+class B : public A {
+public:
+  B(int x, int y)
+      : A(x) {  // 调用父类 A 的构造函数
+    std::cout &lt;&lt; &quot;B's constructor with value: &quot; &lt;&lt; y &lt;&lt; std::endl;
+  }
+  ~B() {
+    std::cout &lt;&lt; &quot;B's deconstructor&quot; &lt;&lt; std::endl;
+  }
+  void foo() override {
+      std::cout &lt;&lt; &quot;B::foo&quot; &lt;&lt; std::endl;
+  }
+
+  int b;
+};
+
+class C : public B {
+public:
+  C(int x, int y, int z)
+      : B(x, y) {  // 调用父类 B 的构造函数
+    std::cout &lt;&lt; &quot;C's constructor with value: &quot; &lt;&lt; z &lt;&lt; std::endl;
+  }
+  ~C() {
+    std::cout &lt;&lt; &quot;C's deconstructor&quot; &lt;&lt; std::endl;
+  }
+  void foo() override {
+      std::cout &lt;&lt; &quot;C::foo&quot; &lt;&lt; std::endl;
+  }
+  int c;
+};
+
+int main() {
+  C obj(1, 2, 3);
+  obj.foo();
+  return 0;
+}</code></pre>
+
+
+<p>输出内存布局为：</p>
+<pre class="highlight"><code>*** Dumping AST Record Layout
+         0 | class A
+         0 |   int a
+           | [sizeof=4, dsize=4, align=4,
+           |  nvsize=4, nvalign=4]
+
+*** Dumping AST Record Layout
+         0 | class B
+         0 |   class A (base)
+         0 |     int a
+         4 |   int b
+           | [sizeof=8, dsize=8, align=4,
+           |  nvsize=8, nvalign=4]
+
+*** Dumping AST Record Layout
+         0 | class C
+         0 |   class B (base)
+         0 |     class A (base)
+         0 |       int a
+         4 |     int b
+         8 |   int c
+           | [sizeof=12, dsize=12, align=4,
+           |  nvsize=12, nvalign=4]</code></pre>
+
+
+<p>虚函数表布局：</p>
+<pre class="highlight"><code>Vtable for 'C' (3 entries).
+   0 | offset_to_top (0)
+   1 | C RTTI
+       -- (A, 0) vtable address --
+       -- (B, 0) vtable address --
+       -- (C, 0) vtable address --
+   2 | void C::foo()
+
+VTable indices for 'C' (1 entries).
+   0 | void C::foo()
+
+Vtable for 'B' (3 entries).
+   0 | offset_to_top (0)
+   1 | B RTTI
+       -- (A, 0) vtable address --
+       -- (B, 0) vtable address --
+   2 | void B::foo()
+
+VTable indices for 'B' (1 entries).
+   0 | void B::foo()
+
+Vtable for 'A' (3 entries).
+   0 | offset_to_top (0)
+   1 | A RTTI
+       -- (A, 0) vtable address --
+   2 | void A::foo()
+
+VTable indices for 'A' (1 entries).
+   0 | void A::foo()</code></pre>
+
+
+<h2>C++ 类的成员变量初始化顺序</h2>
+<ul>
+<li>先执行列表初始化，列表初始化未提供的则执行默认初始化</li>
+<li>再执行相应的构造函数初始化逻辑</li>
+</ul>
+<pre class="highlight"><code class="language-C++">class Complex {
+public:
+    Complex() {}
+    Complex(float re) : re_(re) {}
+    Complex(float re, float im) : re_(re) , im_(im) {}
+private:
+    float re_{0};
+    float im_{0};
+};</code></pre>
+
+
+<h2>当父类存在父类, C++ 派生类的构造和析构顺序</h2>
+<p>对于上述代码C继承B，B继承A，构造一个 C 的输出为：</p>
+<pre class="highlight"><code>A's constructor with value: 1
+B's constructor with value: 2
+C's constructor with value: 3
+C::foo
+C's deconstructor
+B's deconstructor
+A's deconstructor</code></pre>
+
+
+<p>有点像是父类是子类的成员变量，但继承与组合的区别是：</p>
+<ol>
+<li><strong>继承 vs 组合</strong>：</li>
+<li><strong>继承</strong>（父类构造函数）：子类继承父类的属性和行为，子类是父类的一种特殊类型。</li>
+<li>
+<p><strong>组合</strong>（成员变量构造函数）：一个类包含另一个类的对象，表示“有一个”的关系。</p>
+</li>
+<li>
+<p><strong>调用顺序</strong>：</p>
+</li>
+<li><strong>继承</strong>：父类的构造函数在子类的构造函数之前被调用。</li>
+<li>
+<p><strong>组合</strong>：成员对象的构造函数在包含类的构造函数之前被调用。</p>
+</li>
+<li>
+<p><strong>访问权限</strong>：</p>
+</li>
+<li><strong>继承</strong>：子类可以访问父类的受保护成员（<code>protected</code>），但不能访问 私有成员（<code>private</code>）。</li>
+<li>
+<p><strong>组合</strong>：包含类只能通过成员对象的公共接口访问其成员。</p>
+</li>
+<li>
+<p><strong>内存布局</strong>：</p>
+</li>
+<li><strong>继承</strong>：子类对象包含父类对象的内存布局，子类对象的内存布局是父类对象的扩展。</li>
+<li><strong>组合</strong>：包含类对象包含成员对象的内存布局，成员对象是包含类对象的一部分。</li>
+</ol>
+<h2>使用父类的构造函数构造自己</h2>
+<p>以下是一个示例：</p>
+<pre class="highlight"><code class="language-cpp">#include &lt;iostream&gt;
+
+class Base {
+public:
+    Base(int x) {
+        std::cout &lt;&lt; &quot;Base constructor called with x = &quot; &lt;&lt; x &lt;&lt; std::endl;
+    }
+};
+
+class Derived : public Base {
+public:
+    using Base::Base; // Inherit constructors from Base
+};
+
+int main() {
+    Derived d(42); // Calls Base(int x) constructor
+    return 0;
+}</code></pre>
+
+
+<p>在这个例子中，<code>Derived</code>类继承了<code>Base</code>类的构造函数，因此可以直接使用<code>Base</code>类的构造函数来初始化<code>Derived</code>类的对象。运行这个程序将输出：</p>
+<pre class="highlight"><code>Base constructor called with x = 42</code></pre>
+
+
+<p>在C++中，<code>using base::base;</code>这种语法用于继承构造函数。这意味着派生类将继承基类的构造函数，从而可以直接使用基类的构造函数来初始化派生类的对象。</p>
+<h2>C++ 类和结构体的区别</h2>
+<p>除了 struct 缺省的成员属性是public，而 class 是 private 外没有区别</p>]]></description>
+      <guid isPermaLink="false">https://hyz123a.github.io/blog/blog/post/2024/05/29/class-in-cpp/</guid>
+      <pubDate>Wed, 29 May 2024 23:18:00 +0000</pubDate>
+    </item>
+    <item>
+      <title>使用docker搭建交叉编译环境</title>
+      <link>https://hyz123a.github.io/blog/blog/post/2024/07/01/setting-up-a-cross-compilation-environment-using-docker/</link>
+      <description><![CDATA[<p>分享一种，没有 开发板的 SDK 时，一种可行的交叉编译方法。</p>
+<h2>Docker 设置代理</h2>
+<p>创建一个 Docker 配置文件（如果不存在），并在其中添加代理设置。例如，如果使用的是 Linux 操作系统，则配置文件通常位于 /etc/docker/ 目录下，可以使用以下命令创建它：</p>
+<pre class="highlight"><code class="language-shell">sudo mkdir /etc/systemd/system/docker.service.d/ 
+sudo vim /etc/systemd/system/docker.service.d/http-proxy.conf</code></pre>
+
+
+<p>添加以下内容：</p>
+<pre class="highlight"><code>[Service]
+Environment=&quot;HTTP_PROXY=http://your_proxy_server:proxy_port&quot;
+Environment=&quot;HTTPS_PROXY=http://your_proxy_server:proxy_port&quot;
+Environment=&quot;NO_PROXY=localhost,127.0.0.1&quot;</code></pre>
+
+
+<p>请注意，将 "your_proxy_server" 和 "proxy_port" 替换为实际的代理服务器和端口号。</p>
+<p>保存并关闭文件后，重新加载 Docker 守护程序以使更改生效。使用以下命令重启 Docker：</p>
+<pre class="highlight"><code class="language-shell">sudo systemctl daemon-reload
+sudo systemctl restart docker</code></pre>
+
+
+<p>验证代理设置是否生效。您可以使用以下命令来检查 Docker 是否正在使用代理：</p>
+<p>docker info | grep -i proxy<br />
+如果代理设置正确，则应该看到类似以下内容的输出：</p>
+<pre class="highlight"><code>HTTP Proxy: http://your_proxy_server:proxy_port HTTPS Proxy: http://your_proxy_server:proxy_port</code></pre>
+
+
+<h2>利用 qemu 运行非本机架构的容器</h2>
+<p>在 AMD64 (x86_64) 架构的主机上运行 ARM64 架构的容器：</p>
+<ol>
+<li>确保已安装 QEMU：</li>
+</ol>
+<pre class="highlight"><code class="language-shell">sudo apt-get install qemu-user-static</code></pre>
+
+
+<ol>
+<li>启用 QEMU 模拟：</li>
+</ol>
+<pre class="highlight"><code class="language-shell">docker run --rm --privileged multiarch/qemu-user-static --reset -p yes</code></pre>
+
+
+<p>输出：</p>
+<pre class="highlight"><code>Unable to find image 'multiarch/qemu-user-static:latest' locally
+latest: Pulling from multiarch/qemu-user-static
+205dae5015e7: Pull complete
+816739e52091: Pull complete
+30abb83a18eb: Pull complete
+0657daef200b: Pull complete
+30c9c93f40b9: Pull complete
+Digest: sha256:fe60359c92e86a43cc87b3d906006245f77bfc0565676b80004cc666e4feb9f0
+Status: Downloaded newer image for multiarch/qemu-user-static:latest
+Setting /usr/bin/qemu-alpha-static as binfmt interpreter for alpha
+Setting /usr/bin/qemu-arm-static as binfmt interpreter for arm
+Setting /usr/bin/qemu-armeb-static as binfmt interpreter for armeb
+Setting /usr/bin/qemu-sparc-static as binfmt interpreter for sparc
+Setting /usr/bin/qemu-sparc32plus-static as binfmt interpreter for sparc32plus
+Setting /usr/bin/qemu-sparc64-static as binfmt interpreter for sparc64
+Setting /usr/bin/qemu-ppc-static as binfmt interpreter for ppc
+Setting /usr/bin/qemu-ppc64-static as binfmt interpreter for ppc64
+Setting /usr/bin/qemu-ppc64le-static as binfmt interpreter for ppc64le
+Setting /usr/bin/qemu-m68k-static as binfmt interpreter for m68k
+Setting /usr/bin/qemu-mips-static as binfmt interpreter for mips
+Setting /usr/bin/qemu-mipsel-static as binfmt interpreter for mipsel
+Setting /usr/bin/qemu-mipsn32-static as binfmt interpreter for mipsn32
+Setting /usr/bin/qemu-mipsn32el-static as binfmt interpreter for mipsn32el
+Setting /usr/bin/qemu-mips64-static as binfmt interpreter for mips64
+Setting /usr/bin/qemu-mips64el-static as binfmt interpreter for mips64el
+Setting /usr/bin/qemu-sh4-static as binfmt interpreter for sh4
+Setting /usr/bin/qemu-sh4eb-static as binfmt interpreter for sh4eb
+Setting /usr/bin/qemu-s390x-static as binfmt interpreter for s390x
+Setting /usr/bin/qemu-aarch64-static as binfmt interpreter for aarch64
+Setting /usr/bin/qemu-aarch64_be-static as binfmt interpreter for aarch64_be
+Setting /usr/bin/qemu-hppa-static as binfmt interpreter for hppa
+Setting /usr/bin/qemu-riscv32-static as binfmt interpreter for riscv32
+Setting /usr/bin/qemu-riscv64-static as binfmt interpreter for riscv64
+Setting /usr/bin/qemu-xtensa-static as binfmt interpreter for xtensa
+Setting /usr/bin/qemu-xtensaeb-static as binfmt interpreter for xtensaeb
+Setting /usr/bin/qemu-microblaze-static as binfmt interpreter for microblaze
+Setting /usr/bin/qemu-microblazeel-static as binfmt interpreter for microblazeel
+Setting /usr/bin/qemu-or1k-static as binfmt interpreter for or1k
+Setting /usr/bin/qemu-hexagon-static as binfmt interpreter for hexagon</code></pre>
+
+
+<ol>
+<li>使用 <code>--platform</code> 标志明确指定平台：</li>
+</ol>
+<pre class="highlight"><code>sudo docker run --platform linux/arm64/v8 -it arm64v8/ubuntu:22.04 # 注意宿主机的版本一致
+这里当然也可以直接在 docker 容器中编译，则不需要与宿主机版本一致</code></pre>
+
+
+<p>进入 docker 容器中。</p>
+<h2>使用 docker 获得 交叉编译环境所需要的 sysroot</h2>
+<p>在 docker 中：</p>
+<pre class="highlight"><code class="language-shell">apt update
+apt install clang cmake build-essential \
+exit</code></pre>
+
+
+<p>这里可以添加自己需要的库。</p>
+<p>将 sysroot 从容器复制到宿主机：</p>
+<pre class="highlight"><code class="language-shell">$ sudo docker ps -a
+CONTAINER ID   IMAGE                 COMMAND   CREATED       STATUS                   PORTS     NAMES
+f367a6b0316f   arm64v8/ubuntu:22.04  &quot;bash&quot;    4 hours ago   Exited (0) 4 hours ago   interesting_knuth
+$ mkdir ubuntu22-arm64-sysroot
+$ sudo docker cp f367a6b0316f:/ ubuntu22-arm64-sysroot</code></pre>
+
+
+<h2>使用 CMake 交叉编译</h2>
+<p>cross-toolchain-aarch64-template.cmake</p>
+<pre class="highlight"><code class="language-Cmake">cmake_minimum_required(VERSION 3.10)
+
+set(CMAKE_SYSTEM_NAME Linux)
+set(CMAKE_SYSTEM_PROCESSOR aarch64)
+
+# Specify the sysroot.
+# You need to modify &lt;path_to_user_target_sysroot&gt; appropriately for your environment.
+set(target_sysroot &lt;Absolute_path_to&gt;/ubuntu22-arm64-sysroot)
+set(CMAKE_SYSROOT ${target_sysroot})
+
+# Specify the cross compiler.
+set(triple aarch64-linux-gnu)
+set(CMAKE_C_COMPILER_TARGET ${triple})
+set(CMAKE_C_COMPILER clang)
+set(CMAKE_CXX_COMPILER_TARGET ${triple})
+set(CMAKE_CXX_COMPILER clang++)
+
+set(CMAKE_FIND_ROOT_PATH ${target_sysroot})
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)</code></pre>
+
+
+<p>编译时，指定 toolchain</p>
+<pre class="highlight"><code class="language-shell">cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=./cmake/cross-toolchain-aarch64-template.cmake # 设置你的 toolchain file 所在地址
+cmake --build build --parallel `nproc`</code></pre>]]></description>
+      <guid isPermaLink="false">https://hyz123a.github.io/blog/blog/post/2024/07/01/setting-up-a-cross-compilation-environment-using-docker/</guid>
+      <pubDate>Mon, 01 Jul 2024 18:18:00 +0000</pubDate>
+    </item>
+  </channel>
+</rss>
