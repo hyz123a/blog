@@ -7,15 +7,12 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta http-equiv="cleartype" content="on">
-<link rel="alternate" type="application/rss+xml" title="Hyz blog" href="/blog/feed.xml" />
-<link href="/blog/static/theme/style.css" rel="stylesheet">
+<link rel="alternate" type="application/rss+xml" title="Hyz blog" href="/hyz123a.github.io/blog/feed.xml" />
+<link href="/hyz123a.github.io/blog/static/theme/style.css" rel="stylesheet">
 
 
   
-<title>C++ 的类 - Hyz blog</title>
-<link rel="stylesheet" href="/blog/static/theme/railscasts.min.css">
-<script src="/blog/static/theme/highlight.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/medium-zoom@1.0.6/dist/medium-zoom.min.js"></script>
+<title>Page Not Found - Hyz blog</title>
 
 </head>
 
@@ -25,8 +22,8 @@
   <header class="header">
     <nav class="nav">
       <ul>
-        <li><a href="/blog/">首页</a></li>
-<li><a href="/blog/about/">关于</a></li>
+        <li><a href="/hyz123a.github.io/blog/">首页</a></li>
+<li><a href="/hyz123a.github.io/blog/about/">关于</a></li>
 <li><a href="https://github.com/hyz123a/" target="_blank">GitHub</a></li>
       </ul>
     </nav>
@@ -36,237 +33,12 @@
 <main class="main page">
   <article class="article">
     <div class="title">
-      <h1 class="title">C++ 的类</h1>
+      <h1 class="title">Page Not Found</h1>
     </div>
-    
-<div class="meta">
-  
-  <time class="created" datetime="2024-05-29">May 29, 2024</time>
-  
-</div>
-
     <div class="content">
-      
-      <details open>
-        <summary>目录：</summary>
-        <nav><ul>
-<li><a href="#C-类内存布局">C++ 类内存布局</a></li>
-<li><a href="#C-类的成员变量初始化顺序">C++ 类的成员变量初始化顺序</a></li>
-<li><a href="#当父类存在父类-C-派生类的构造和析构顺序">当父类存在父类, C++ 派生类的构造和析构顺序</a></li>
-<li><a href="#使用父类的构造函数构造自己">使用父类的构造函数构造自己</a></li>
-<li><a href="#C-类和结构体的区别">C++ 类和结构体的区别</a></li>
-</ul></nav>
-      </details>
-      <hr>
-      
-
-      <p>最近经常能够看到 C++ 面经中出现 C++ 类的内存布局及初始化一个派生类时基类，派生类的构造顺序等这样的问题。同时自己也在这方面存在疑惑，所以就专门去学习了相关的知识，并在查找资历的过程中记录一下。</p>
-<h2><a id="C-类内存布局" href="#C-类内存布局" class="anchor"></a>C++ 类内存布局</h2>
-<p>在开始之前先看一下 clang 的两个命令：</p>
-<pre class="highlight"><code class="language-bash">clang++ -Xclang -fdump-record-layouts xxx.cpp
-clang++ -Xclang -fdump-vtable-layouts xxx.cpp</code></pre>
-
-
-<p>对于代码</p>
-<pre class="highlight"><code class="language-C++">#include &lt;iostream&gt;
-
-class A {
-public:
-  A(int x) {
-    std::cout &lt;&lt; &quot;A's constructor with value: &quot; &lt;&lt; x &lt;&lt; std::endl;
-  }
-  ~A() {
-    std::cout &lt;&lt; &quot;A's deconstructor&quot; &lt;&lt; std::endl;
-  }
-  virtual void foo() {
-      std::cout &lt;&lt; &quot;A::foo&quot; &lt;&lt; std::endl;
-  }
-private:
-  int a;
-};
-
-class B : public A {
-public:
-  B(int x, int y)
-      : A(x) {  // 调用父类 A 的构造函数
-    std::cout &lt;&lt; &quot;B's constructor with value: &quot; &lt;&lt; y &lt;&lt; std::endl;
-  }
-  ~B() {
-    std::cout &lt;&lt; &quot;B's deconstructor&quot; &lt;&lt; std::endl;
-  }
-  void foo() override {
-      std::cout &lt;&lt; &quot;B::foo&quot; &lt;&lt; std::endl;
-  }
-
-  int b;
-};
-
-class C : public B {
-public:
-  C(int x, int y, int z)
-      : B(x, y) {  // 调用父类 B 的构造函数
-    std::cout &lt;&lt; &quot;C's constructor with value: &quot; &lt;&lt; z &lt;&lt; std::endl;
-  }
-  ~C() {
-    std::cout &lt;&lt; &quot;C's deconstructor&quot; &lt;&lt; std::endl;
-  }
-  void foo() override {
-      std::cout &lt;&lt; &quot;C::foo&quot; &lt;&lt; std::endl;
-  }
-  int c;
-};
-
-int main() {
-  C obj(1, 2, 3);
-  obj.foo();
-  return 0;
-}</code></pre>
-
-
-<p>输出内存布局为：</p>
-<pre class="highlight"><code>*** Dumping AST Record Layout
-         0 | class A
-         0 |   int a
-           | [sizeof=4, dsize=4, align=4,
-           |  nvsize=4, nvalign=4]
-
-*** Dumping AST Record Layout
-         0 | class B
-         0 |   class A (base)
-         0 |     int a
-         4 |   int b
-           | [sizeof=8, dsize=8, align=4,
-           |  nvsize=8, nvalign=4]
-
-*** Dumping AST Record Layout
-         0 | class C
-         0 |   class B (base)
-         0 |     class A (base)
-         0 |       int a
-         4 |     int b
-         8 |   int c
-           | [sizeof=12, dsize=12, align=4,
-           |  nvsize=12, nvalign=4]</code></pre>
-
-
-<p>虚函数表布局：</p>
-<pre class="highlight"><code>Vtable for 'C' (3 entries).
-   0 | offset_to_top (0)
-   1 | C RTTI
-       -- (A, 0) vtable address --
-       -- (B, 0) vtable address --
-       -- (C, 0) vtable address --
-   2 | void C::foo()
-
-VTable indices for 'C' (1 entries).
-   0 | void C::foo()
-
-Vtable for 'B' (3 entries).
-   0 | offset_to_top (0)
-   1 | B RTTI
-       -- (A, 0) vtable address --
-       -- (B, 0) vtable address --
-   2 | void B::foo()
-
-VTable indices for 'B' (1 entries).
-   0 | void B::foo()
-
-Vtable for 'A' (3 entries).
-   0 | offset_to_top (0)
-   1 | A RTTI
-       -- (A, 0) vtable address --
-   2 | void A::foo()
-
-VTable indices for 'A' (1 entries).
-   0 | void A::foo()</code></pre>
-
-
-<h2><a id="C-类的成员变量初始化顺序" href="#C-类的成员变量初始化顺序" class="anchor"></a>C++ 类的成员变量初始化顺序</h2>
-<ul>
-<li>先执行列表初始化，列表初始化未提供的则执行默认初始化</li>
-<li>再执行相应的构造函数初始化逻辑</li>
-</ul>
-<pre class="highlight"><code class="language-C++">class Complex {
-public:
-    Complex() {}
-    Complex(float re) : re_(re) {}
-    Complex(float re, float im) : re_(re) , im_(im) {}
-private:
-    float re_{0};
-    float im_{0};
-};</code></pre>
-
-
-<h2><a id="当父类存在父类-C-派生类的构造和析构顺序" href="#当父类存在父类-C-派生类的构造和析构顺序" class="anchor"></a>当父类存在父类, C++ 派生类的构造和析构顺序</h2>
-<p>对于上述代码C继承B，B继承A，构造一个 C 的输出为：</p>
-<pre class="highlight"><code>A's constructor with value: 1
-B's constructor with value: 2
-C's constructor with value: 3
-C::foo
-C's deconstructor
-B's deconstructor
-A's deconstructor</code></pre>
-
-
-<p>有点像是父类是子类的成员变量，但继承与组合的区别是：</p>
-<ol>
-<li><strong>继承 vs 组合</strong>：</li>
-<li><strong>继承</strong>（父类构造函数）：子类继承父类的属性和行为，子类是父类的一种特殊类型。</li>
-<li>
-<p><strong>组合</strong>（成员变量构造函数）：一个类包含另一个类的对象，表示“有一个”的关系。</p>
-</li>
-<li>
-<p><strong>调用顺序</strong>：</p>
-</li>
-<li><strong>继承</strong>：父类的构造函数在子类的构造函数之前被调用。</li>
-<li>
-<p><strong>组合</strong>：成员对象的构造函数在包含类的构造函数之前被调用。</p>
-</li>
-<li>
-<p><strong>访问权限</strong>：</p>
-</li>
-<li><strong>继承</strong>：子类可以访问父类的受保护成员（<code>protected</code>），但不能访问 私有成员（<code>private</code>）。</li>
-<li>
-<p><strong>组合</strong>：包含类只能通过成员对象的公共接口访问其成员。</p>
-</li>
-<li>
-<p><strong>内存布局</strong>：</p>
-</li>
-<li><strong>继承</strong>：子类对象包含父类对象的内存布局，子类对象的内存布局是父类对象的扩展。</li>
-<li><strong>组合</strong>：包含类对象包含成员对象的内存布局，成员对象是包含类对象的一部分。</li>
-</ol>
-<h2><a id="使用父类的构造函数构造自己" href="#使用父类的构造函数构造自己" class="anchor"></a>使用父类的构造函数构造自己</h2>
-<p>以下是一个示例：</p>
-<pre class="highlight"><code class="language-cpp">#include &lt;iostream&gt;
-
-class Base {
-public:
-    Base(int x) {
-        std::cout &lt;&lt; &quot;Base constructor called with x = &quot; &lt;&lt; x &lt;&lt; std::endl;
-    }
-};
-
-class Derived : public Base {
-public:
-    using Base::Base; // Inherit constructors from Base
-};
-
-int main() {
-    Derived d(42); // Calls Base(int x) constructor
-    return 0;
-}</code></pre>
-
-
-<p>在这个例子中，<code>Derived</code>类继承了<code>Base</code>类的构造函数，因此可以直接使用<code>Base</code>类的构造函数来初始化<code>Derived</code>类的对象。运行这个程序将输出：</p>
-<pre class="highlight"><code>Base constructor called with x = 42</code></pre>
-
-
-<p>在C++中，<code>using base::base;</code>这种语法用于继承构造函数。这意味着派生类将继承基类的构造函数，从而可以直接使用基类的构造函数来初始化派生类的对象。</p>
-<h2><a id="C-类和结构体的区别" href="#C-类和结构体的区别" class="anchor"></a>C++ 类和结构体的区别</h2>
-<p>除了 struct 缺省的成员属性是public，而 class 是 private 外没有区别</p>
+      <p>🤔你好像迷路了。</p>
     </div>
   </article>
-  
 </main>
 
   </div>
@@ -279,7 +51,6 @@ int main() {
   </footer>
 
   
-
   <script>
   let elems = document.getElementsByTagName("a");
   for (let i = 0; i < elems.length; i++) {
@@ -289,15 +60,6 @@ int main() {
   }
 </script>
   
-<script>
-  // enable code syntax highlight
-  hljs.configure({ languages: [] }); // disable language auto detection
-  hljs.initHighlightingOnLoad();
-
-  // enable medium-zoom for all images
-  mediumZoom(document.querySelectorAll('.content img'));
-</script>
-
 </body>
 
 </html>

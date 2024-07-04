@@ -221,5 +221,5 @@ Base constructor called with x = 42
 
 ## C++ 类和结构体的区别
 
-除了 struct 缺省的成员属性是public，而 class 是 private 外没有区别
+除了 struct 缺省的成员属性是public，而 class 是 private 外没有区别。
 

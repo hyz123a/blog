@@ -5,7 +5,7 @@ tags: [Linux, QEMU, ARM, AArch64, Docker, Cross-compile]
 created: 2024-7-1 18:18:00
 ---
 
-分享一种，没有 开发板的 SDK 时，一种可行的交叉编译方法。
+分享一种没有开发板的 SDK 时，一种可行的交叉编译方法。
 
 ## Docker 设置代理
 
