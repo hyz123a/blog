@@ -60,7 +60,7 @@
       <hr>
       
 
-      <p>最近经常能够看到 C++ 面经中出现 C++ 类的内存布局及初始化一个派生类时基类，派生类的构造顺序等这样的问题。同时自己也在这方面存在疑惑，所以就专门去学习了相关的知识，并在查找资历的过程中记录一下。</p>
+      <p>最近经常能够看到 C++ 面经中出现 C++ 类的内存布局及初始化一个派生类时，基类，派生类的构造顺序等这样的问题。同时自己也在这方面存在疑惑，所以就专门去学习了相关的知识，并在查找资历的过程中记录一下。</p>
 <h2><a id="C-类内存布局" href="#C-类内存布局" class="anchor"></a>C++ 类内存布局</h2>
 <p>在开始之前先看一下 clang 的两个命令：</p>
 <pre class="highlight"><code class="language-bash">clang++ -Xclang -fdump-record-layouts xxx.cpp
@@ -263,7 +263,7 @@ int main() {
 
 <p>在C++中，<code>using base::base;</code>这种语法用于继承构造函数。这意味着派生类将继承基类的构造函数，从而可以直接使用基类的构造函数来初始化派生类的对象。</p>
 <h2><a id="C-类和结构体的区别" href="#C-类和结构体的区别" class="anchor"></a>C++ 类和结构体的区别</h2>
-<p>除了 struct 缺省的成员属性是public，而 class 是 private 外没有区别。</p>
+<p>除了 struct 缺省的成员属性是 public，而 class 是 private 外没有区别。</p>
     </div>
   </article>
   
