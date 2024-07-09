@@ -52,7 +52,7 @@
         <nav><ul>
 <li><a href="#Docker-设置代理">Docker 设置代理</a></li>
 <li><a href="#利用-qemu-运行非本机架构的容器">利用 qemu 运行非本机架构的容器</a></li>
-<li><a href="#使用-docker-获得-交叉编译环境所需要的-sysroot">使用 docker 获得 交叉编译环境所需要的 sysroot</a></li>
+<li><a href="#使用-docker-获得交叉编译环境所需要的-sysroot">使用 docker 获得交叉编译环境所需要的 sysroot</a></li>
 <li><a href="#使用-CMake-交叉编译">使用 CMake 交叉编译</a></li>
 </ul></nav>
       </details>
@@ -144,12 +144,12 @@ Setting /usr/bin/qemu-hexagon-static as binfmt interpreter for hexagon</code></p
 <ol>
 <li>使用 <code>--platform</code> 标志明确指定平台：</li>
 </ol>
-<pre class="highlight"><code>sudo docker run --platform linux/arm64/v8 -it arm64v8/ubuntu:22.04 # 注意宿主机的版本一致
+<pre class="highlight"><code>docker run --platform linux/arm64/v8 -it arm64v8/ubuntu:22.04 # 注意宿主机的版本一致
 这里当然也可以直接在 docker 容器中编译，则不需要与宿主机版本一致</code></pre>
 
 
 <p>进入 docker 容器中。</p>
-<h2><a id="使用-docker-获得-交叉编译环境所需要的-sysroot" href="#使用-docker-获得-交叉编译环境所需要的-sysroot" class="anchor"></a>使用 docker 获得 交叉编译环境所需要的 sysroot</h2>
+<h2><a id="使用-docker-获得交叉编译环境所需要的-sysroot" href="#使用-docker-获得交叉编译环境所需要的-sysroot" class="anchor"></a>使用 docker 获得交叉编译环境所需要的 sysroot</h2>
 <p>在 docker 中：</p>
 <pre class="highlight"><code class="language-shell">apt update
 apt install clang cmake build-essential \
@@ -158,11 +158,11 @@ exit</code></pre>
 
 <p>这里可以添加自己需要的库。</p>
 <p>将 sysroot 从容器复制到宿主机：</p>
-<pre class="highlight"><code class="language-shell">$ sudo docker ps -a
+<pre class="highlight"><code class="language-shell">$ docker ps -a
 CONTAINER ID   IMAGE                 COMMAND   CREATED       STATUS                   PORTS     NAMES
 f367a6b0316f   arm64v8/ubuntu:22.04  &quot;bash&quot;    4 hours ago   Exited (0) 4 hours ago   interesting_knuth
 $ mkdir ubuntu22-arm64-sysroot
-$ sudo docker cp f367a6b0316f:/ ubuntu22-arm64-sysroot</code></pre>
+$ docker cp f367a6b0316f:/ ubuntu22-arm64-sysroot</code></pre>
 
 
 <h2><a id="使用-CMake-交叉编译" href="#使用-CMake-交叉编译" class="anchor"></a>使用 CMake 交叉编译</h2>
@@ -192,8 +192,8 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)</code></pre>
 
 
 <p>编译时，指定 toolchain</p>
-<pre class="highlight"><code class="language-shell">cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=./cmake/cross-toolchain-aarch64-template.cmake # 设置你的 toolchain file 所在地址
-cmake --build build --parallel `nproc`</code></pre>
+<pre class="highlight"><code class="language-shell">$ cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=./cmake/cross-toolchain-aarch64-template.cmake # 设置你的 toolchain file 所在地址
+$ cmake --build build --parallel `nproc`</code></pre>
     </div>
   </article>
   

@@ -1,5 +1,5 @@
 ---
-title: 编译一个 AArch64 平台的最小 Linux 内核
+title: 编译一个 AArch64 平台的最小 Linux 系统
 categories: Dev
 tags: [Linux, OS, 内核, BusyBox, QEMU, ARM, AArch64]
 created: 2024-5-28 14:29:00

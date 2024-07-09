@@ -106,13 +106,13 @@ Setting /usr/bin/qemu-hexagon-static as binfmt interpreter for hexagon
 3. 使用 `--platform` 标志明确指定平台：
 
 ```
-sudo docker run --platform linux/arm64/v8 -it arm64v8/ubuntu:22.04 # 注意宿主机的版本一致
+docker run --platform linux/arm64/v8 -it arm64v8/ubuntu:22.04 # 注意宿主机的版本一致
 这里当然也可以直接在 docker 容器中编译，则不需要与宿主机版本一致
 ```
 
 进入 docker 容器中。
 
-## 使用 docker 获得 交叉编译环境所需要的 sysroot
+## 使用 docker 获得交叉编译环境所需要的 sysroot
 
 在 docker 中：
 
@@ -127,11 +127,11 @@ exit
 将 sysroot 从容器复制到宿主机：
 
 ```shell
-$ sudo docker ps -a
+$ docker ps -a
 CONTAINER ID   IMAGE                 COMMAND   CREATED       STATUS                   PORTS     NAMES
 f367a6b0316f   arm64v8/ubuntu:22.04  "bash"    4 hours ago   Exited (0) 4 hours ago   interesting_knuth
 $ mkdir ubuntu22-arm64-sysroot
-$ sudo docker cp f367a6b0316f:/ ubuntu22-arm64-sysroot
+$ docker cp f367a6b0316f:/ ubuntu22-arm64-sysroot
 ```
 
 ## 使用 CMake 交叉编译
@@ -165,6 +165,6 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 
 编译时，指定 toolchain
 ```shell
-cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=./cmake/cross-toolchain-aarch64-template.cmake # 设置你的 toolchain file 所在地址
-cmake --build build --parallel `nproc`
+$ cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=./cmake/cross-toolchain-aarch64-template.cmake # 设置你的 toolchain file 所在地址
+$ cmake --build build --parallel `nproc`
 ```
