@@ -2,15 +2,15 @@
 <rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0">
   <channel>
     <title>Hyz blog</title>
-    <link>https://hyz123a.github.io/feed.xml</link>
+    <link>https://hyz123a.github.io/blog/blog/feed.xml</link>
     <description>一只腊鸡的技术成长。</description>
-    <atom:link href="https://hyz123a.github.io/feed.xml" rel="self"/>
+    <atom:link href="https://hyz123a.github.io/blog/blog/feed.xml" rel="self"/>
     <docs>http://www.rssboard.org/rss-specification</docs>
     <generator>python-feedgen</generator>
-    <lastBuildDate>Tue, 20 Aug 2024 14:10:14 +0000</lastBuildDate>
+    <lastBuildDate>Tue, 20 Aug 2024 14:14:55 +0000</lastBuildDate>
     <item>
       <title>编译一个 AArch64 平台的最小 Linux 系统</title>
-      <link>https://hyz123a.github.io/post/2024/05/28/minimal-linux-with-busybox/</link>
+      <link>https://hyz123a.github.io/blog/blog/post/2024/05/28/minimal-linux-with-busybox/</link>
       <description><![CDATA[<p>总结一下最近折腾的事情，方便以后查阅。</p>
 <blockquote>
 <p>所有内容都假设已经安装了必须的构建工具链，如果没有装，可以在报错的时候再根据提示安装。</p>
@@ -216,12 +216,12 @@ mdev -s</code></pre>
 <li><a href="https://gist.github.com/chrisdone/02e165a0004be33734ac2334f215380e">Build and run minimal Linux / Busybox systems in Qemu</a></li>
 <li><a href="https://www.qemu.org/download/#source">Download QEMU</a></li>
 </ul>]]></description>
-      <guid isPermaLink="false">https://hyz123a.github.io/post/2024/05/28/minimal-linux-with-busybox/</guid>
+      <guid isPermaLink="false">https://hyz123a.github.io/blog/blog/post/2024/05/28/minimal-linux-with-busybox/</guid>
       <pubDate>Tue, 28 May 2024 14:29:00 +0000</pubDate>
     </item>
     <item>
       <title>C++ 的类</title>
-      <link>https://hyz123a.github.io/post/2024/05/29/class-in-cpp/</link>
+      <link>https://hyz123a.github.io/blog/blog/post/2024/05/29/class-in-cpp/</link>
       <description><![CDATA[<p>最近经常能够看到 C++ 面经中出现 C++ 类的内存布局及初始化一个派生类时，基类，派生类的构造顺序等这样的问题。同时自己也在这方面存在疑惑，所以就专门去学习了相关的知识，并在查找资历的过程中记录一下。</p>
 <h2>C++ 类内存布局</h2>
 <p>在开始之前先看一下 clang 的两个命令：</p>
@@ -413,12 +413,12 @@ int main() {
 <p>在C++中，<code>using base::base;</code>这种语法用于继承构造函数。这意味着派生类将继承基类的构造函数，从而可以直接使用基类的构造函数来初始化派生类的对象。</p>
 <h2>C++ 类和结构体的区别</h2>
 <p>除了 struct 缺省的成员属性是 public，而 class 是 private 外没有区别。</p>]]></description>
-      <guid isPermaLink="false">https://hyz123a.github.io/post/2024/05/29/class-in-cpp/</guid>
+      <guid isPermaLink="false">https://hyz123a.github.io/blog/blog/post/2024/05/29/class-in-cpp/</guid>
       <pubDate>Wed, 29 May 2024 23:18:00 +0000</pubDate>
     </item>
     <item>
       <title>使用docker搭建交叉编译环境</title>
-      <link>https://hyz123a.github.io/post/2024/07/01/setting-up-a-cross-compilation-environment-using-docker/</link>
+      <link>https://hyz123a.github.io/blog/blog/post/2024/07/01/setting-up-a-cross-compilation-environment-using-docker/</link>
       <description><![CDATA[<p>分享一种没有开发板的 SDK 时，一种可行的交叉编译方法。</p>
 <h2>Docker 设置代理</h2>
 <p>创建一个 Docker 配置文件（如果不存在），并在其中添加代理设置。例如，如果使用的是 Linux 操作系统，则配置文件通常位于 /etc/docker/ 目录下，可以使用以下命令创建它：</p>
@@ -554,7 +554,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)</code></pre>
 <p>编译时，指定 toolchain</p>
 <pre class="highlight"><code class="language-shell">$ cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=./cmake/cross-toolchain-aarch64-template.cmake # 设置你的 toolchain file 所在地址
 $ cmake --build build --parallel `nproc`</code></pre>]]></description>
-      <guid isPermaLink="false">https://hyz123a.github.io/post/2024/07/01/setting-up-a-cross-compilation-environment-using-docker/</guid>
+      <guid isPermaLink="false">https://hyz123a.github.io/blog/blog/post/2024/07/01/setting-up-a-cross-compilation-environment-using-docker/</guid>
       <pubDate>Mon, 01 Jul 2024 18:18:00 +0000</pubDate>
     </item>
   </channel>
