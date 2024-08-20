@@ -7,14 +7,14 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta http-equiv="cleartype" content="on">
-<link rel="alternate" type="application/rss+xml" title="Hyz blog" href="/blog/feed.xml" />
-<link href="/blog/static/theme/style.css" rel="stylesheet">
+<link rel="alternate" type="application/rss+xml" title="Hyz blog" href="/feed.xml" />
+<link href="/static/theme/style.css" rel="stylesheet">
 
 
   
 <title>C++ 的类 - Hyz blog</title>
-<link rel="stylesheet" href="/blog/static/theme/railscasts.min.css">
-<script src="/blog/static/theme/highlight.min.js"></script>
+<link rel="stylesheet" href="/static/theme/railscasts.min.css">
+<script src="/static/theme/highlight.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/medium-zoom@1.0.6/dist/medium-zoom.min.js"></script>
 
 </head>
@@ -25,8 +25,8 @@
   <header class="header">
     <nav class="nav">
       <ul>
-        <li><a href="/blog/">首页</a></li>
-<li><a href="/blog/about/">关于</a></li>
+        <li><a href="/">首页</a></li>
+<li><a href="/about/">关于</a></li>
 <li><a href="https://github.com/hyz123a/" target="_blank">GitHub</a></li>
       </ul>
     </nav>
@@ -209,32 +209,19 @@ A's deconstructor</code></pre>
 
 
 <p>有点像是父类是子类的成员变量，但继承与组合的区别是：</p>
-<ol>
-<li><strong>继承 vs 组合</strong>：</li>
+<blockquote>
+<p><strong>继承 vs 组合</strong>：</p>
+</blockquote>
+<ul>
 <li><strong>继承</strong>（父类构造函数）：子类继承父类的属性和行为，子类是父类的一种特殊类型。</li>
-<li>
-<p><strong>组合</strong>（成员变量构造函数）：一个类包含另一个类的对象，表示“有一个”的关系。</p>
-</li>
-<li>
-<p><strong>调用顺序</strong>：</p>
-</li>
+<li><strong>组合</strong>（成员变量构造函数）：一个类包含另一个类的对象，表示“有一个”的关系。</li>
 <li><strong>继承</strong>：父类的构造函数在子类的构造函数之前被调用。</li>
-<li>
-<p><strong>组合</strong>：成员对象的构造函数在包含类的构造函数之前被调用。</p>
-</li>
-<li>
-<p><strong>访问权限</strong>：</p>
-</li>
+<li><strong>组合</strong>：成员对象的构造函数在包含类的构造函数之前被调用。</li>
 <li><strong>继承</strong>：子类可以访问父类的受保护成员（<code>protected</code>），但不能访问 私有成员（<code>private</code>）。</li>
-<li>
-<p><strong>组合</strong>：包含类只能通过成员对象的公共接口访问其成员。</p>
-</li>
-<li>
-<p><strong>内存布局</strong>：</p>
-</li>
+<li><strong>组合</strong>：包含类只能通过成员对象的公共接口访问其成员。</li>
 <li><strong>继承</strong>：子类对象包含父类对象的内存布局，子类对象的内存布局是父类对象的扩展。</li>
 <li><strong>组合</strong>：包含类对象包含成员对象的内存布局，成员对象是包含类对象的一部分。</li>
-</ol>
+</ul>
 <h2><a id="使用父类的构造函数构造自己" href="#使用父类的构造函数构造自己" class="anchor"></a>使用父类的构造函数构造自己</h2>
 <p>以下是一个示例：</p>
 <pre class="highlight"><code class="language-cpp">#include &lt;iostream&gt;
