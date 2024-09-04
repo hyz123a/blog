@@ -7,15 +7,7 @@ created: 2024-5-29 23:18:00
 
 最近经常能够看到 C++ 面经中出现 C++ 类的内存布局及初始化一个派生类时，基类，派生类的构造顺序等这样的问题。同时自己也在这方面存在疑惑，所以就专门去学习了相关的知识，并在查找资历的过程中记录一下。
 
-## C++ 类内存布局
-
-在开始之前先看一下 clang 的两个命令：
-```bash
-clang++ -Xclang -fdump-record-layouts xxx.cpp
-clang++ -Xclang -fdump-vtable-layouts xxx.cpp
-```
-
-对于代码
+在开始之前，先看一段代码的输出：
 
 ```C++
 #include <iostream>
@@ -29,113 +21,177 @@ public:
     std::cout << "A's deconstructor" << std::endl;
   }
   virtual void foo() {
-      std::cout << "A::foo" << std::endl;
+    std::cout << "A::foo" << std::endl;
   }
+
 private:
-  int a;
+  int x_{0};
 };
 
-class B : public A {
+class B : virtual public A {
 public:
   B(int x, int y)
-      : A(x) {  // 调用父类 A 的构造函数
+      : A(x) {  // 调用父类 A 的构造函数，由于显示的定义了参数构造函数，不会生成默认构造函数
     std::cout << "B's constructor with value: " << y << std::endl;
   }
   ~B() {
     std::cout << "B's deconstructor" << std::endl;
   }
   void foo() override {
-      std::cout << "B::foo" << std::endl;
+    std::cout << "B::foo" << std::endl;
   }
 
-  int b;
+  int x_{1};
 };
 
-class C : public B {
+class C : virtual public A {
 public:
-  C(int x, int y, int z)
-      : B(x, y) {  // 调用父类 B 的构造函数
-    std::cout << "C's constructor with value: " << z << std::endl;
+  C(int x, int y)
+      : A(x) {  // 调用父类 A 的构造函数
+    std::cout << "C's constructor with value: " << y << std::endl;
   }
   ~C() {
     std::cout << "C's deconstructor" << std::endl;
   }
   void foo() override {
-      std::cout << "C::foo" << std::endl;
+    std::cout << "C::foo" << std::endl;
   }
-  int c;
+  void bar() {
+    std::cout << "C::bar" << std::endl;
+  }
+  int x_{2};
+};
+
+class D : public B, public C {
+public:
+  D(int x, int y, int z)
+      :A(x), B(x, y), C(y, x) {  // 调用父类 B 的构造函数，这里必须调用A的参数构造函数
+    std::cout << "D's constructor with value: " << z << std::endl;
+  }
+  ~D() {
+    std::cout << "D's deconstructor" << std::endl;
+  }
+  void foo() override {
+    std::cout << "D::foo" << std::endl;
+  }
+  void bar() {
+    std::cout << "D::bar" << std::endl;
+    std::cout << "D::x = " << " " << x_ << std::endl;
+    std::cout << "C::x = " << " " << C::x_ << std::endl;
+    std::cout << "B::x = " << " " << B::x_ << std::endl;
+    C::bar();
+  }
+  int x_{3};
 };
 
 int main() {
-  C obj(1, 2, 3);
-  obj.foo();
+  D d(1, 2, 3);
+  std::cout << "\n";
+
+  d.bar();
+  std::cout << "\n";
+
+  C* c = &d;
+  c->bar();
+  c->foo();
+  std::cout << "\n";
+
   return 0;
 }
+```
+
+output:
+
+```shell
+A's constructor with value: 1
+B's constructor with value: 2
+C's constructor with value: 1
+D's constructor with value: 3
+
+D::bar
+D::x =  3
+C::x =  2
+B::x =  1
+C::bar
+
+C::bar
+D::foo
+
+D's deconstructor
+C's deconstructor
+B's deconstructor
+A's deconstructor
+```
+
+## C++ 类内存布局
+
+执行
+
+```bash
+clang++ -Xclang -fdump-record-layouts xxx.cpp
 ```
 
 输出内存布局为：
 
 ```
+
 *** Dumping AST Record Layout
          0 | class A
-         0 |   int a
-           | [sizeof=4, dsize=4, align=4,
-           |  nvsize=4, nvalign=4]
+         0 |   (A vtable pointer)
+         8 |   int x_
+           | [sizeof=16, dsize=12, align=8,
+           |  nvsize=12, nvalign=8]
 
 *** Dumping AST Record Layout
          0 | class B
-         0 |   class A (base)
-         0 |     int a
-         4 |   int b
-           | [sizeof=8, dsize=8, align=4,
-           |  nvsize=8, nvalign=4]
+         0 |   (B vtable pointer)
+         8 |   int x_
+        16 |   class A (virtual base)
+        16 |     (A vtable pointer)
+        24 |     int x_
+           | [sizeof=32, dsize=28, align=8,
+           |  nvsize=12, nvalign=8]
 
 *** Dumping AST Record Layout
          0 | class C
-         0 |   class B (base)
-         0 |     class A (base)
-         0 |       int a
-         4 |     int b
-         8 |   int c
-           | [sizeof=12, dsize=12, align=4,
-           |  nvsize=12, nvalign=4]
+         0 |   (C vtable pointer)
+         8 |   int x_
+        16 |   class A (virtual base)
+        16 |     (A vtable pointer)
+        24 |     int x_
+           | [sizeof=32, dsize=28, align=8,
+           |  nvsize=12, nvalign=8]
 
+*** Dumping AST Record Layout
+         0 | class D
+         0 |   class B (primary base)
+         0 |     (B vtable pointer)
+         8 |     int x_
+        16 |   class C (base)
+        16 |     (C vtable pointer)
+        24 |     int x_
+        28 |   int x_
+        32 |   class A (virtual base)
+        32 |     (A vtable pointer)
+        40 |     int x_
+           | [sizeof=48, dsize=44, align=8,
+           |  nvsize=32, nvalign=8]
 ```
 
-虚函数表布局：
 
+执行
+
+```shell
+clang++ -Xclang -fdump-vtable-layouts xxx.cpp
 ```
-Vtable for 'C' (3 entries).
-   0 | offset_to_top (0)
-   1 | C RTTI
-       -- (A, 0) vtable address --
-       -- (B, 0) vtable address --
-       -- (C, 0) vtable address --
-   2 | void C::foo()
 
-VTable indices for 'C' (1 entries).
-   0 | void C::foo()
+查看虚函数表实体
 
-Vtable for 'B' (3 entries).
-   0 | offset_to_top (0)
-   1 | B RTTI
-       -- (A, 0) vtable address --
-       -- (B, 0) vtable address --
-   2 | void B::foo()
+虚继承的作用:
 
-VTable indices for 'B' (1 entries).
-   0 | void B::foo()
-
-Vtable for 'A' (3 entries).
-   0 | offset_to_top (0)
-   1 | A RTTI
-       -- (A, 0) vtable address --
-   2 | void A::foo()
-
-VTable indices for 'A' (1 entries).
-   0 | void A::foo()
-
-```
+- **消除二义性**：在多重继承中，避免了对同一基类的多重实例。
+- **共享基类数据**：派生类可以共享基类的成员，节省内存。
+- **统一接口**：确保派生类通过虚基类访问基类的接口一致。
 
 ## C++ 类的成员变量初始化顺序
 
@@ -156,30 +212,7 @@ private:
 
 ## 当父类存在父类, C++ 派生类的构造和析构顺序
 
-对于上述代码C继承B，B继承A，构造一个 C 的输出为：
-
-```
-A's constructor with value: 1
-B's constructor with value: 2
-C's constructor with value: 3
-C::foo
-C's deconstructor
-B's deconstructor
-A's deconstructor
-```
-
-有点像是父类是子类的成员变量，但继承与组合的区别是：
-
-> **继承 vs 组合**：
-
-   - **继承**（父类构造函数）：子类继承父类的属性和行为，子类是父类的一种特殊类型。
-   - **组合**（成员变量构造函数）：一个类包含另一个类的对象，表示“有一个”的关系。
-   - **继承**：父类的构造函数在子类的构造函数之前被调用。
-   - **组合**：成员对象的构造函数在包含类的构造函数之前被调用。
-   - **继承**：子类可以访问父类的受保护成员（`protected`），但不能访问 私有成员（`private`）。
-   - **组合**：包含类只能通过成员对象的公共接口访问其成员。
-   - **继承**：子类对象包含父类对象的内存布局，子类对象的内存布局是父类对象的扩展。
-   - **组合**：包含类对象包含成员对象的内存布局，成员对象是包含类对象的一部分。
+先构造的后析构
 
 ## 使用父类的构造函数构造自己
 
