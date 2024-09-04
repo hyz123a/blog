@@ -61,13 +61,7 @@
       
 
       <p>最近经常能够看到 C++ 面经中出现 C++ 类的内存布局及初始化一个派生类时，基类，派生类的构造顺序等这样的问题。同时自己也在这方面存在疑惑，所以就专门去学习了相关的知识，并在查找资历的过程中记录一下。</p>
-<h2><a id="C-类内存布局" href="#C-类内存布局" class="anchor"></a>C++ 类内存布局</h2>
-<p>在开始之前先看一下 clang 的两个命令：</p>
-<pre class="highlight"><code class="language-bash">clang++ -Xclang -fdump-record-layouts xxx.cpp
-clang++ -Xclang -fdump-vtable-layouts xxx.cpp</code></pre>
-
-
-<p>对于代码</p>
+<p>在开始之前，先看一段代码的输出：</p>
 <pre class="highlight"><code class="language-C++">#include &lt;iostream&gt;
 
 class A {
@@ -79,108 +73,166 @@ public:
     std::cout &lt;&lt; &quot;A's deconstructor&quot; &lt;&lt; std::endl;
   }
   virtual void foo() {
-      std::cout &lt;&lt; &quot;A::foo&quot; &lt;&lt; std::endl;
+    std::cout &lt;&lt; &quot;A::foo&quot; &lt;&lt; std::endl;
   }
+
 private:
-  int a;
+  int x_{0};
 };
 
-class B : public A {
+class B : virtual public A {
 public:
   B(int x, int y)
-      : A(x) {  // 调用父类 A 的构造函数
+      : A(x) {  // 调用父类 A 的构造函数，由于显示的定义了参数构造函数，不会生成默认构造函数
     std::cout &lt;&lt; &quot;B's constructor with value: &quot; &lt;&lt; y &lt;&lt; std::endl;
   }
   ~B() {
     std::cout &lt;&lt; &quot;B's deconstructor&quot; &lt;&lt; std::endl;
   }
   void foo() override {
-      std::cout &lt;&lt; &quot;B::foo&quot; &lt;&lt; std::endl;
+    std::cout &lt;&lt; &quot;B::foo&quot; &lt;&lt; std::endl;
   }
 
-  int b;
+  int x_{1};
 };
 
-class C : public B {
+class C : virtual public A {
 public:
-  C(int x, int y, int z)
-      : B(x, y) {  // 调用父类 B 的构造函数
-    std::cout &lt;&lt; &quot;C's constructor with value: &quot; &lt;&lt; z &lt;&lt; std::endl;
+  C(int x, int y)
+      : A(x) {  // 调用父类 A 的构造函数
+    std::cout &lt;&lt; &quot;C's constructor with value: &quot; &lt;&lt; y &lt;&lt; std::endl;
   }
   ~C() {
     std::cout &lt;&lt; &quot;C's deconstructor&quot; &lt;&lt; std::endl;
   }
   void foo() override {
-      std::cout &lt;&lt; &quot;C::foo&quot; &lt;&lt; std::endl;
+    std::cout &lt;&lt; &quot;C::foo&quot; &lt;&lt; std::endl;
   }
-  int c;
+  void bar() {
+    std::cout &lt;&lt; &quot;C::bar&quot; &lt;&lt; std::endl;
+  }
+  int x_{2};
+};
+
+class D : public B, public C {
+public:
+  D(int x, int y, int z)
+      :A(x), B(x, y), C(y, x) {  // 调用父类 B 的构造函数，这里必须调用A的参数构造函数
+    std::cout &lt;&lt; &quot;D's constructor with value: &quot; &lt;&lt; z &lt;&lt; std::endl;
+  }
+  ~D() {
+    std::cout &lt;&lt; &quot;D's deconstructor&quot; &lt;&lt; std::endl;
+  }
+  void foo() override {
+    std::cout &lt;&lt; &quot;D::foo&quot; &lt;&lt; std::endl;
+  }
+  void bar() {
+    std::cout &lt;&lt; &quot;D::bar&quot; &lt;&lt; std::endl;
+    std::cout &lt;&lt; &quot;D::x = &quot; &lt;&lt; &quot; &quot; &lt;&lt; x_ &lt;&lt; std::endl;
+    std::cout &lt;&lt; &quot;C::x = &quot; &lt;&lt; &quot; &quot; &lt;&lt; C::x_ &lt;&lt; std::endl;
+    std::cout &lt;&lt; &quot;B::x = &quot; &lt;&lt; &quot; &quot; &lt;&lt; B::x_ &lt;&lt; std::endl;
+    C::bar();
+  }
+  int x_{3};
 };
 
 int main() {
-  C obj(1, 2, 3);
-  obj.foo();
+  D d(1, 2, 3);
+  std::cout &lt;&lt; &quot;\n&quot;;
+
+  d.bar();
+  std::cout &lt;&lt; &quot;\n&quot;;
+
+  C* c = &amp;d;
+  c-&gt;bar();
+  c-&gt;foo();
+  std::cout &lt;&lt; &quot;\n&quot;;
+
   return 0;
 }</code></pre>
+
+
+<p>output:</p>
+<pre class="highlight"><code class="language-shell">A's constructor with value: 1
+B's constructor with value: 2
+C's constructor with value: 1
+D's constructor with value: 3
+
+D::bar
+D::x =  3
+C::x =  2
+B::x =  1
+C::bar
+
+C::bar
+D::foo
+
+D's deconstructor
+C's deconstructor
+B's deconstructor
+A's deconstructor</code></pre>
+
+
+<h2><a id="C-类内存布局" href="#C-类内存布局" class="anchor"></a>C++ 类内存布局</h2>
+<p>执行</p>
+<pre class="highlight"><code class="language-bash">clang++ -Xclang -fdump-record-layouts xxx.cpp</code></pre>
 
 
 <p>输出内存布局为：</p>
 <pre class="highlight"><code>*** Dumping AST Record Layout
          0 | class A
-         0 |   int a
-           | [sizeof=4, dsize=4, align=4,
-           |  nvsize=4, nvalign=4]
+         0 |   (A vtable pointer)
+         8 |   int x_
+           | [sizeof=16, dsize=12, align=8,
+           |  nvsize=12, nvalign=8]
 
 *** Dumping AST Record Layout
          0 | class B
-         0 |   class A (base)
-         0 |     int a
-         4 |   int b
-           | [sizeof=8, dsize=8, align=4,
-           |  nvsize=8, nvalign=4]
+         0 |   (B vtable pointer)
+         8 |   int x_
+        16 |   class A (virtual base)
+        16 |     (A vtable pointer)
+        24 |     int x_
+           | [sizeof=32, dsize=28, align=8,
+           |  nvsize=12, nvalign=8]
 
 *** Dumping AST Record Layout
          0 | class C
-         0 |   class B (base)
-         0 |     class A (base)
-         0 |       int a
-         4 |     int b
-         8 |   int c
-           | [sizeof=12, dsize=12, align=4,
-           |  nvsize=12, nvalign=4]</code></pre>
+         0 |   (C vtable pointer)
+         8 |   int x_
+        16 |   class A (virtual base)
+        16 |     (A vtable pointer)
+        24 |     int x_
+           | [sizeof=32, dsize=28, align=8,
+           |  nvsize=12, nvalign=8]
+
+*** Dumping AST Record Layout
+         0 | class D
+         0 |   class B (primary base)
+         0 |     (B vtable pointer)
+         8 |     int x_
+        16 |   class C (base)
+        16 |     (C vtable pointer)
+        24 |     int x_
+        28 |   int x_
+        32 |   class A (virtual base)
+        32 |     (A vtable pointer)
+        40 |     int x_
+           | [sizeof=48, dsize=44, align=8,
+           |  nvsize=32, nvalign=8]</code></pre>
 
 
-<p>虚函数表布局：</p>
-<pre class="highlight"><code>Vtable for 'C' (3 entries).
-   0 | offset_to_top (0)
-   1 | C RTTI
-       -- (A, 0) vtable address --
-       -- (B, 0) vtable address --
-       -- (C, 0) vtable address --
-   2 | void C::foo()
-
-VTable indices for 'C' (1 entries).
-   0 | void C::foo()
-
-Vtable for 'B' (3 entries).
-   0 | offset_to_top (0)
-   1 | B RTTI
-       -- (A, 0) vtable address --
-       -- (B, 0) vtable address --
-   2 | void B::foo()
-
-VTable indices for 'B' (1 entries).
-   0 | void B::foo()
-
-Vtable for 'A' (3 entries).
-   0 | offset_to_top (0)
-   1 | A RTTI
-       -- (A, 0) vtable address --
-   2 | void A::foo()
-
-VTable indices for 'A' (1 entries).
-   0 | void A::foo()</code></pre>
+<p>执行</p>
+<pre class="highlight"><code class="language-shell">clang++ -Xclang -fdump-vtable-layouts xxx.cpp</code></pre>
 
 
+<p>查看虚函数表实体</p>
+<p>虚继承的作用:</p>
+<ul>
+<li><strong>消除二义性</strong>：在多重继承中，避免了对同一基类的多重实例。</li>
+<li><strong>共享基类数据</strong>：派生类可以共享基类的成员，节省内存。</li>
+<li><strong>统一接口</strong>：确保派生类通过虚基类访问基类的接口一致。</li>
+</ul>
 <h2><a id="C-类的成员变量初始化顺序" href="#C-类的成员变量初始化顺序" class="anchor"></a>C++ 类的成员变量初始化顺序</h2>
 <ul>
 <li>先执行列表初始化，列表初始化未提供的则执行默认初始化</li>
@@ -198,30 +250,7 @@ private:
 
 
 <h2><a id="当父类存在父类-C-派生类的构造和析构顺序" href="#当父类存在父类-C-派生类的构造和析构顺序" class="anchor"></a>当父类存在父类, C++ 派生类的构造和析构顺序</h2>
-<p>对于上述代码C继承B，B继承A，构造一个 C 的输出为：</p>
-<pre class="highlight"><code>A's constructor with value: 1
-B's constructor with value: 2
-C's constructor with value: 3
-C::foo
-C's deconstructor
-B's deconstructor
-A's deconstructor</code></pre>
-
-
-<p>有点像是父类是子类的成员变量，但继承与组合的区别是：</p>
-<blockquote>
-<p><strong>继承 vs 组合</strong>：</p>
-</blockquote>
-<ul>
-<li><strong>继承</strong>（父类构造函数）：子类继承父类的属性和行为，子类是父类的一种特殊类型。</li>
-<li><strong>组合</strong>（成员变量构造函数）：一个类包含另一个类的对象，表示“有一个”的关系。</li>
-<li><strong>继承</strong>：父类的构造函数在子类的构造函数之前被调用。</li>
-<li><strong>组合</strong>：成员对象的构造函数在包含类的构造函数之前被调用。</li>
-<li><strong>继承</strong>：子类可以访问父类的受保护成员（<code>protected</code>），但不能访问 私有成员（<code>private</code>）。</li>
-<li><strong>组合</strong>：包含类只能通过成员对象的公共接口访问其成员。</li>
-<li><strong>继承</strong>：子类对象包含父类对象的内存布局，子类对象的内存布局是父类对象的扩展。</li>
-<li><strong>组合</strong>：包含类对象包含成员对象的内存布局，成员对象是包含类对象的一部分。</li>
-</ul>
+<p>先构造的后析构</p>
 <h2><a id="使用父类的构造函数构造自己" href="#使用父类的构造函数构造自己" class="anchor"></a>使用父类的构造函数构造自己</h2>
 <p>以下是一个示例：</p>
 <pre class="highlight"><code class="language-cpp">#include &lt;iostream&gt;
