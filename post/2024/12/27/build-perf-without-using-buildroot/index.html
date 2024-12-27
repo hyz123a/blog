@@ -7,12 +7,15 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta http-equiv="cleartype" content="on">
-<link rel="alternate" type="application/rss+xml" title="Hyz blog" href="/hyz123a.github.io/blog/feed.xml" />
-<link href="/hyz123a.github.io/blog/static/theme/style.css" rel="stylesheet">
+<link rel="alternate" type="application/rss+xml" title="Hyz blog" href="/blog/feed.xml" />
+<link href="/blog/static/theme/style.css" rel="stylesheet">
 
 
   
-<title>Page Not Found - Hyz blog</title>
+<title>在 buildroot 不支持的情况下编译一个用于性能分析的perf - Hyz blog</title>
+<link rel="stylesheet" href="/blog/static/theme/railscasts.min.css">
+<script src="/blog/static/theme/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/medium-zoom@1.0.6/dist/medium-zoom.min.js"></script>
 
 </head>
 
@@ -22,8 +25,8 @@
   <header class="header">
     <nav class="nav">
       <ul>
-        <li><a href="/hyz123a.github.io/blog/">首页</a></li>
-<li><a href="/hyz123a.github.io/blog/about/">关于</a></li>
+        <li><a href="/blog/">首页</a></li>
+<li><a href="/blog/about/">关于</a></li>
 <li><a href="https://github.com/hyz123a/" target="_blank">GitHub</a></li>
       </ul>
     </nav>
@@ -33,12 +36,81 @@
 <main class="main page">
   <article class="article">
     <div class="title">
-      <h1 class="title">Page Not Found</h1>
+      <h1 class="title">在 buildroot 不支持的情况下编译一个用于性能分析的perf</h1>
     </div>
+    
+<div class="meta">
+  
+  <time class="created" datetime="2024-12-27">December 27, 2024</time>
+  
+</div>
+
     <div class="content">
-      <p>🤔你好像迷路了。</p>
+      
+      <details open>
+        <summary>目录：</summary>
+        <nav><ul>
+<li><a href="#Docker-环境构建">Docker 环境构建</a></li>
+<li><a href="#利用Ubuntu-ARM64-Docker-静态编译-perf">利用Ubuntu ARM64 Docker 静态编译 perf</a></li>
+<li><a href="#参考资料">参考资料</a></li>
+</ul></nav>
+      </details>
+      <hr>
+      
+
+      <p>最近需要对一个 arm64 嵌入式项目进行性能分析，而我在厂家提供的开发板的 buildroot 中竟找不到 perf 相关选项，基于这种情况我考虑到了是否能够在 Docker 提供的环境中静态编译一个能够使用的 perf？</p>
+<h2><a id="Docker-环境构建" href="#Docker-环境构建" class="anchor"></a>Docker 环境构建</h2>
+<p>参考之前的文章《使用docker搭建交叉编译环境》。</p>
+<h2><a id="利用Ubuntu-ARM64-Docker-静态编译-perf" href="#利用Ubuntu-ARM64-Docker-静态编译-perf" class="anchor"></a>利用Ubuntu ARM64 Docker 静态编译 perf</h2>
+<p>Perf工具对于Linux性能分析非常有用，在PC的Linux发行版上，只需要使用相应系统的包管理命令安装即可，例如，在Ubuntu系统上，直接使用sudo apt-get install -y linux-tools-common linux-tools-generic命令安装，其中linux-tools-common提供了各种linux tools的包装器，如acpidbg、perf等，它们会在运行时引用到适合当前内核版本的工具，而linux-tools-generic是个虚拟包，指向当前发行版最新的linux tools版本，这里面包含了真正要执行的命令。</p>
+<p>Ubuntu是开发人员中常用的系统，提供了非常丰富的软件包，这里面包括许多的支持库，这些库不仅有交叉编译的版本，还有静态链接的版本（包名通常是PackageName-dev-ARCH-cross），如果能够利用Ubuntu丰富的库来生成静态链接的perf，可以大大减少我们自己去生成这些依赖库的时间。</p>
+<p>平时，我们在x86或x86_64体系架构上运行Ubuntu，虽然可以安装各种以-cross结尾的库来交叉编译，但逐一安装就很繁琐了，事实上Ubuntu如果已经支持某个包，想要自己编译安装它，是很简单的，以i2c-tools为例，大概执行以下几步就能搞定</p>
+<pre class="highlight"><code class="language-shell"># 下载源代码并打上Ubuntu特定patch
+apt-get source i2c-tools
+# 安装构建i2c-tools的依赖包
+sudo apt-get build-dep i2c-tools
+# 编译源码并生成deb包
+apt-get source --compile i2c-tools</code></pre>
+
+
+<p>当然我们平时不需要这么做，因为直接sudo apt-get install i2c-tools就能下载预编译好的包安装了。这里对我们有用的是apt-get build-dep命令可以轻而易举地帮我们解决大部分依赖问题。</p>
+<p>接下来，可以在这个容器里安装好编译linux-tools-generic的必要依赖并执行编译：</p>
+<pre class="highlight"><code class="language-shell"># 启用sources.list中的源代码下载路径，以便apt-get build-dep可以运行
+sed -i &quot;s/# deb-src/deb-src/g&quot; /etc/apt/sources.list
+apt-get update -y
+# 先安装一些必要的工具，如果不需要内建jvmti引擎的支持，可不安装default-jdk
+apt-get install -y apt-utils bc bison dialog flex python3 python2-minimal default-jdk
+# 自动安装构建linux-tools-generic包的大部分工具和依赖库
+apt-get build-dep -y linux-tools-generic
+# 使用下面的命令尝试静态编译，然后从日志中再查看还缺少的库，并逐一安装
+# cd KERNEL_SRC/tools/perf
+# make V=1 VF=1 FEATURE_TESTS=all LDFLAGS=-static |&amp; tee build.log
+# 根据上条命令的输出提示，安装缺少的包，反复尝试此过程
+apt-get install -y libelf-dev
+apt-get install -y libdw-dev
+apt-get install -y systemtap-sdt-dev
+apt-get install -y libssl-dev
+apt-get install -y libslang2-dev
+apt-get install -y libperl-dev
+apt-get install -y python-dev
+# 即使安装了相应包后，仍旧会有No libdw DWARF unwind found这种提示，此时需要调试Makefile来判断真实原因
+# make -n -d V=1 VF=1 FEATURE_TESTS=all LDFLAGS=-static |&amp; tee build.log
+# /usr/bin/make -f Makefile.perf -n -d V=1 VF=1 FEATURE_TESTS=all LDFLAGS=-static all |&amp; tee build.log
+# 通过上面命令的调试日志，可以看出来，是由KERNEL_SRC/tools/build/Makefile.feature来检测feature是否支持的
+# 再具体到Makefile.feature，又可调试feature_check_code，将之添加$(warning)函数来输出检查feature时执行的命令
+# 从命令的输出可以看到测试日志都在KERNEL_SRC/tools/build/feature/test-FEATURE.make.output中
+# 针对每一个为OFF的feature，查看这些output文件，才会知道检测失败的真实原因
+# 例如，从tools/build/feature/test-dwarf.make.output中看到的dwarf检测失败原因其实是/usr/bin/ld: cannot find -lbz2
+apt-get install -y libbz2-dev</code></pre>
+
+
+<h2><a id="参考资料" href="#参考资料" class="anchor"></a>参考资料</h2>
+<ul>
+<li><a href="https://www.sfysoft.com/2021/05/26/How-to-build-perf/index.html">如何给嵌入式Linux构建一个支持多特性的perf</a></li>
+</ul>
     </div>
   </article>
+  
 </main>
 
   </div>
@@ -51,6 +123,7 @@
   </footer>
 
   
+
   <script>
   let elems = document.getElementsByTagName("a");
   for (let i = 0; i < elems.length; i++) {
@@ -60,6 +133,15 @@
   }
 </script>
   
+<script>
+  // enable code syntax highlight
+  hljs.configure({ languages: [] }); // disable language auto detection
+  hljs.initHighlightingOnLoad();
+
+  // enable medium-zoom for all images
+  mediumZoom(document.querySelectorAll('.content img'));
+</script>
+
 </body>
 
 </html>
